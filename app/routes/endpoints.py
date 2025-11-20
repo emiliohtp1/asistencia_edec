@@ -1,4 +1,8 @@
+"""
+Archivo único con todos los endpoints de la API
+"""
 from fastapi import APIRouter, HTTPException
+from app.services.usuario_service import obtener_usuario_por_matricula, obtener_todos_alumnos, obtener_todos_maestros
 from app.services.asistencia_service import (
     registrar_asistencia, 
     obtener_asistencias_semana, 
@@ -6,14 +10,65 @@ from app.services.asistencia_service import (
     obtener_todas_asistencias,
     crear_asistencia_directa
 )
+from app.models.usuario import UsuarioResponse
 from app.models.asistencia import AsistenciaCreate, AsistenciaDirectaCreate
 
-router = APIRouter(prefix="/api/asistencias", tags=["asistencias"])
+# Router principal
+router = APIRouter()
 
-@router.post("/registrar")
+# ============================================================================
+# ENDPOINTS DE USUARIOS
+# ============================================================================
+
+@router.get("/api/usuarios/{matricula}", response_model=UsuarioResponse, tags=["usuarios"])
+async def obtener_usuario(matricula: str):
+    """
+    Obtiene la información de un usuario (alumno o maestro) por su matrícula
+    """
+    try:
+        usuario = obtener_usuario_por_matricula(matricula)
+        if not usuario.encontrado:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        return usuario
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/api/usuarios/alumnos/todos", tags=["usuarios"])
+async def obtener_alumnos():
+    """
+    Obtiene todos los alumnos de la colección 'alumnos'
+    """
+    try:
+        alumnos = obtener_todos_alumnos()
+        return {
+            "total": len(alumnos),
+            "alumnos": alumnos
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/api/usuarios/maestros/todos", tags=["usuarios"])
+async def obtener_maestros():
+    """
+    Obtiene todos los maestros de la colección 'maestros'
+    """
+    try:
+        maestros = obtener_todos_maestros()
+        return {
+            "total": len(maestros),
+            "maestros": maestros
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# ENDPOINTS DE ASISTENCIAS
+# ============================================================================
+
+@router.post("/api/asistencias/registrar", tags=["asistencias"])
 async def crear_registro_asistencia(asistencia: AsistenciaCreate):
     """
-    Registra una nueva asistencia (entrada o salida)
+    Registra una nueva asistencia (entrada o salida) en colecciones semanales
     """
     try:
         if asistencia.tipo_registro not in ["entrada", "salida"]:
@@ -32,7 +87,7 @@ async def crear_registro_asistencia(asistencia: AsistenciaCreate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/semana-actual")
+@router.get("/api/asistencias/semana-actual", tags=["asistencias"])
 async def obtener_asistencias_semana_actual():
     """
     Obtiene todas las asistencias de la semana actual (colecciones semanales)
@@ -48,7 +103,7 @@ async def obtener_asistencias_semana_actual():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/todas")
+@router.get("/api/asistencias/todas", tags=["asistencias"])
 async def obtener_todas_las_asistencias():
     """
     Obtiene todos los registros de la colección 'asistencia'
@@ -63,7 +118,7 @@ async def obtener_todas_las_asistencias():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/crear")
+@router.post("/api/asistencias/crear", tags=["asistencias"])
 async def crear_asistencia_directa_endpoint(asistencia: AsistenciaDirectaCreate):
     """
     Crea un registro de asistencia directamente en la colección 'asistencia'

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import connect_db, close_db
-from app.routes import usuarios, asistencias
+from app.routes.endpoints import router
 from app.config import Config
 
 app = FastAPI(
@@ -19,9 +19,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Incluir routers
-app.include_router(usuarios.router)
-app.include_router(asistencias.router)
+# Incluir todos los endpoints desde un solo archivo
+app.include_router(router)
 
 @app.on_event("startup")
 async def startup_event():
