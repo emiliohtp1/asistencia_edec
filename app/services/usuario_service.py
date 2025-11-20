@@ -1,5 +1,6 @@
 from app.database import get_db
 from app.models.usuario import UsuarioResponse
+from typing import List, Dict
 
 def obtener_usuario_por_matricula(matricula: str) -> UsuarioResponse:
     """
@@ -37,4 +38,30 @@ def obtener_usuario_por_matricula(matricula: str) -> UsuarioResponse:
         tipo="",
         encontrado=False
     )
+
+def obtener_todos_alumnos() -> List[Dict]:
+    """
+    Obtiene todos los alumnos de la colección 'alumnos'
+    """
+    db = get_db()
+    alumnos = list(db.alumnos.find().sort("matricula", 1))
+    
+    # Convertir ObjectId a string y limpiar datos
+    for alumno in alumnos:
+        alumno["_id"] = str(alumno["_id"])
+    
+    return alumnos
+
+def obtener_todos_maestros() -> List[Dict]:
+    """
+    Obtiene todos los maestros de la colección 'maestros'
+    """
+    db = get_db()
+    maestros = list(db.maestros.find().sort("matricula", 1))
+    
+    # Convertir ObjectId a string y limpiar datos
+    for maestro in maestros:
+        maestro["_id"] = str(maestro["_id"])
+    
+    return maestros
 

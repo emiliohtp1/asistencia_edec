@@ -1,6 +1,12 @@
 from fastapi import APIRouter, HTTPException
-from app.services.asistencia_service import registrar_asistencia, obtener_asistencias_semana, obtener_nombre_coleccion_semanal
-from app.models.asistencia import AsistenciaCreate
+from app.services.asistencia_service import (
+    registrar_asistencia, 
+    obtener_asistencias_semana, 
+    obtener_nombre_coleccion_semanal,
+    obtener_todas_asistencias,
+    crear_asistencia_directa
+)
+from app.models.asistencia import AsistenciaCreate, AsistenciaDirectaCreate
 
 router = APIRouter(prefix="/api/asistencias", tags=["asistencias"])
 
@@ -29,7 +35,7 @@ async def crear_registro_asistencia(asistencia: AsistenciaCreate):
 @router.get("/semana-actual")
 async def obtener_asistencias_semana_actual():
     """
-    Obtiene todas las asistencias de la semana actual
+    Obtiene todas las asistencias de la semana actual (colecciones semanales)
     """
     try:
         nombre_coleccion = obtener_nombre_coleccion_semanal()
@@ -39,6 +45,45 @@ async def obtener_asistencias_semana_actual():
             "total": len(asistencias),
             "asistencias": asistencias
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/todas")
+async def obtener_todas_las_asistencias():
+    """
+    Obtiene todos los registros de la colección 'asistencia'
+    """
+    try:
+        asistencias = obtener_todas_asistencias()
+        return {
+            "coleccion": "asistencia",
+            "total": len(asistencias),
+            "asistencias": asistencias
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/crear")
+async def crear_asistencia_directa_endpoint(asistencia: AsistenciaDirectaCreate):
+    """
+    Crea un registro de asistencia directamente en la colección 'asistencia'
+    """
+    try:
+        # Validar tipo_registro
+        if asistencia.tipo_registro not in ["entrada", "salida"]:
+            raise HTTPException(
+                status_code=400,
+                detail="El tipo_registro debe ser 'entrada' o 'salida'"
+            )
+        
+        # Convertir el modelo a diccionario
+        datos = asistencia.dict()
+        
+        # Crear la asistencia
+        resultado = crear_asistencia_directa(datos)
+        return resultado
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

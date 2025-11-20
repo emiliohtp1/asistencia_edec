@@ -5,6 +5,7 @@ from app.services.usuario_service import obtener_usuario_por_matricula
 import os
 import pandas as pd
 from app.config import Config
+from typing import List, Dict
 
 def obtener_nombre_coleccion_semanal():
     """
@@ -118,4 +119,53 @@ def obtener_asistencias_semana(nombre_coleccion: str = None):
             registro["timestamp"] = registro["timestamp"].isoformat()
     
     return registros
+
+def obtener_todas_asistencias() -> List[Dict]:
+    """
+    Obtiene todos los registros de la colección 'asistencia'
+    """
+    db = get_db()
+    coleccion = db.asistencia
+    registros = list(coleccion.find().sort("timestamp", -1))  # Más recientes primero
+    
+    # Convertir ObjectId a string y timestamp a ISO format
+    for registro in registros:
+        registro["_id"] = str(registro["_id"])
+        if isinstance(registro.get("timestamp"), datetime):
+            registro["timestamp"] = registro["timestamp"].isoformat()
+    
+    return registros
+
+def crear_asistencia_directa(datos: dict) -> dict:
+    """
+    Crea un registro de asistencia directamente en la colección 'asistencia'
+    """
+    db = get_db()
+    coleccion = db.asistencia
+    
+    # Preparar el registro
+    ahora = datetime.now()
+    registro = {
+        "matricula": datos["matricula"],
+        "nombre_completo": datos["nombre_completo"],
+        "tipo_registro": datos["tipo_registro"],
+        "fecha": datos.get("fecha") or ahora.strftime("%Y-%m-%d"),
+        "hora": datos.get("hora") or ahora.strftime("%H:%M:%S"),
+        "timestamp": ahora,
+        "carrera": datos.get("carrera", ""),
+        "tipo_usuario": datos.get("tipo_usuario", "")
+    }
+    
+    # Insertar en la colección
+    resultado = coleccion.insert_one(registro)
+    
+    # Convertir ObjectId a string para la respuesta
+    registro["_id"] = str(resultado.inserted_id)
+    registro["timestamp"] = registro["timestamp"].isoformat()
+    
+    return {
+        "id": str(resultado.inserted_id),
+        "mensaje": "Asistencia creada exitosamente en la colección 'asistencia'",
+        "registro": registro
+    }
 
