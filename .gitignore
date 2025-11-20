@@ -1,0 +1,99 @@
+# Archivos de entorno - CRÍTICO: No subir credenciales
+.env
+.env.local
+.env.*
+*.env
+
+# Archivos Excel generados
+excel_reports/
+*.xlsx
+*.xls
+
+# Python - Archivos compilados
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Entornos virtuales
+venv/
+env/
+ENV/
+.venv
+.ENV
+
+# Distribución / empaquetado
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Base de datos local (si se usa SQLite)
+*.db
+*.sqlite
+*.sqlite3
+
+# Archivos temporales
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Sistema operativo
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Render
+.render/
+
+# Archivos de configuración local
+config.local.py
+settings.local.py
+
