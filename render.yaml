@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: asistencia-edec-api
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: DATABASE_NAME
+        value: asistencia_edec
+      - key: EXCEL_DIR
+        value: ./excel_reports
+      - key: PYTHON_VERSION
+        value: 3.11.0
+
