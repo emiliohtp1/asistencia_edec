@@ -168,4 +168,5 @@ async def login_usuario(datos: LoginRequest):
     except HTTPException:
         raise
     except Exception as e:
+        print(f"Error en el servidor al intentar login: {e}")
         raise HTTPException(status_code=500, detail=str(e))
