@@ -6,6 +6,7 @@ import os
 import pandas as pd
 from app.config import Config
 from typing import List, Dict
+from bson import ObjectId
 
 def obtener_nombre_coleccion_semanal():
     """
@@ -20,12 +21,20 @@ def obtener_nombre_coleccion_semanal():
     semana = inicio_semana.isocalendar()[1]
     return f"asistencias_{año}_Semana{semana:02d}"
 
+def normalizar_registro(reg):
+    """
+    Convierte ObjectId a string para evitar errores de FastAPI.
+    """
+    if "_id" in reg and isinstance(reg["_id"], ObjectId):
+        reg["_id"] = str(reg["_id"])
+    return reg
+
 def registrar_asistencia(matricula: str) -> dict:
     """
     Registra ENTRADA o SALIDA automáticamente:
     - Si no existe registro hoy → ENTRADA
     - Si existe entrada sin salida → SALIDA
-    - Si ya tiene entrada y salida → Error
+    - Si ya tiene entrada y salida → error
     """
 
     db = get_db()
@@ -38,11 +47,10 @@ def registrar_asistencia(matricula: str) -> dict:
     coleccion = db[nombre_coleccion]
 
     hoy = datetime.now().strftime("%Y-%m-%d")
+    ahora = datetime.now()
 
     # Buscar si ya tiene registro hoy
     registro_existente = coleccion.find_one({"matricula": matricula, "fecha": hoy})
-
-    ahora = datetime.now()
 
     # === 1) NO EXISTE REGISTRO → ENTRADA ===
     if registro_existente is None:
@@ -52,19 +60,22 @@ def registrar_asistencia(matricula: str) -> dict:
             "carrera": usuario.carrera,
             "fecha": hoy,
             "entrada": ahora.strftime("%H:%M"),
-            "salida": "no registrado",
+            "salida": "no registrado"
         }
 
         resultado = coleccion.insert_one(registro)
 
+        registro["_id"] = str(resultado.inserted_id)  # Normalizado
+
         return {
-            "id": str(resultado.inserted_id),
+            "id": registro["_id"],
             "mensaje": "Entrada registrada",
             "registro": registro
         }
 
     # === 2) YA EXISTE ENTRADA Y NO SALIDA → SALIDA ===
     if registro_existente.get("salida") == "no registrado":
+
         coleccion.update_one(
             {"_id": registro_existente["_id"]},
             {"$set": {"salida": ahora.strftime("%H:%M")}}
@@ -72,15 +83,17 @@ def registrar_asistencia(matricula: str) -> dict:
 
         registro_existente["salida"] = ahora.strftime("%H:%M")
 
+        # Normalizamos para evitar error de ObjectId
+        registro_existente = normalizar_registro(registro_existente)
+
         return {
-            "id": str(registro_existente["_id"]),
+            "id": registro_existente["_id"],
             "mensaje": "Salida registrada",
             "registro": registro_existente
         }
 
     # === 3) YA TIENE ENTRADA Y SALIDA ===
     raise ValueError("El usuario ya registró entrada y salida hoy")
-
 
 
 def verificar_y_generar_excel_semanal(nombre_coleccion: str):
