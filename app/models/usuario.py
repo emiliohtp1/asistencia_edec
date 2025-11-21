@@ -14,3 +14,6 @@ class UsuarioResponse(BaseModel):
     tipo: str
     encontrado: bool
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str

@@ -11,7 +11,7 @@ from app.services.asistencia_service import (
     crear_asistencia_directa,
     obtener_todos_usuarios_db
 )
-from app.models.usuario import UsuarioResponse
+from app.models.usuario import UsuarioResponse, LoginRequest
 from app.models.asistencia import AsistenciaCreate, AsistenciaDirectaCreate
 
 # Router principal
@@ -143,19 +143,29 @@ async def crear_asistencia_directa_endpoint(asistencia: AsistenciaDirectaCreate)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/api/usuarios/login/todos", tags=["login"])
-async def obtener_todos_usuarios():
+@router.post("/api/usuarios/login", tags=["login"])
+async def login_usuario(datos: LoginRequest):
     """
-    Obtiene todos los usuarios de la colección 'login'
+    Verifica credenciales de un usuario en la colección 'login'
     """
     try:
-        # ⚠️ CORRECCIÓN CLAVE: Llama a la función de la BD, NO a sí misma
-        usuarios = obtener_todos_usuarios_db() 
-        
+        usuario = obtener_usuario_por_credenciales_db(
+            datos.username,
+            datos.password
+        )
+
+        if not usuario:
+            raise HTTPException(
+                status_code=401,
+                detail="Credenciales incorrectas"
+            )
+
         return {
-            "login": usuarios
+            "mensaje": "Login exitoso",
+            "usuario": usuario
         }
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
-        # Si ocurre un error en la BD, lanza un error 500
         raise HTTPException(status_code=500, detail=str(e))
