@@ -169,3 +169,17 @@ def crear_asistencia_directa(datos: dict) -> dict:
         "registro": registro
     }
 
+def obtener_todos_usuarios_login() -> List[Dict]:
+    """
+    Obtiene todos los usuarios de la colección 'login'
+    """
+    db = get_db()
+    coleccion = db.login
+    registros = list(coleccion.find().sort("timestamp", -1))
+    return registros
+    for registro in registros:
+        registro["_id"] = str(registro["_id"])
+        if isinstance(registro.get("timestamp"), datetime):
+            registro["timestamp"] = registro["timestamp"].isoformat()
+    
+    return registros

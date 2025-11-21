@@ -8,7 +8,8 @@ from app.services.asistencia_service import (
     obtener_asistencias_semana, 
     obtener_nombre_coleccion_semanal,
     obtener_todas_asistencias,
-    crear_asistencia_directa
+    crear_asistencia_directa,
+    obtener_todos_usuarios_login
 )
 from app.models.usuario import UsuarioResponse
 from app.models.asistencia import AsistenciaCreate, AsistenciaDirectaCreate
@@ -142,3 +143,16 @@ async def crear_asistencia_directa_endpoint(asistencia: AsistenciaDirectaCreate)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/api/usuarios/login/todos", tags=["login"])
+async def obtener_todos_usuarios_login():
+    """
+    Obtiene todos los usuarios de la colección 'login'
+    """
+    try:
+        usuarios = obtener_todos_usuarios_login()
+        return {
+            "total": len(usuarios),
+            "usuarios": usuarios
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
