@@ -169,17 +169,25 @@ def crear_asistencia_directa(datos: dict) -> dict:
         "registro": registro
     }
 
-def obtener_todos_usuarios_login() -> List[Dict]:
+def obtener_todos_usuarios_db() -> List[Dict]: # 💡 Cambié el nombre para evitar confusión
     """
-    Obtiene todos los usuarios de la colección 'login'
+    Obtiene y formatea todos los usuarios de la colección 'login'
     """
     db = get_db()
     coleccion = db.login
+    # 1. Obtener los registros
     registros = list(coleccion.find().sort("timestamp", -1))
-    return registros
+    
+    # ⚠️ ERROR CORREGIDO: El 'return registros' estaba prematuramente. Lo eliminamos.
+    
+    # 2. Procesar y formatear los registros
     for registro in registros:
-        registro["_id"] = str(registro["_id"])
+        # Convertir ObjectId a string
+        registro["_id"] = str(registro["_id"]) 
+        
+        # Convertir datetime a formato ISO (string) si existe
         if isinstance(registro.get("timestamp"), datetime):
             registro["timestamp"] = registro["timestamp"].isoformat()
     
+    # 3. Devolver la lista ya procesada
     return registros

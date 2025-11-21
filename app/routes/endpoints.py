@@ -144,14 +144,18 @@ async def crear_asistencia_directa_endpoint(asistencia: AsistenciaDirectaCreate)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/api/usuarios/login/todos", tags=["login"])
-async def obtener_todos_usuarios_login():
+async def obtener_todos_usuarios():
     """
     Obtiene todos los usuarios de la colección 'login'
     """
     try:
-        usuarios = obtener_todos_usuarios_login()
+        # ⚠️ CORRECCIÓN CLAVE: Llama a la función de la BD, NO a sí misma
+        usuarios = obtener_todos_usuarios_login() 
+        
         return {
             "login": usuarios
         }
+        
     except Exception as e:
+        # Si ocurre un error en la BD, lanza un error 500
         raise HTTPException(status_code=500, detail=str(e))
