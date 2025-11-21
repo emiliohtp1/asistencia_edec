@@ -22,43 +22,93 @@ def obtener_nombre_coleccion_semanal():
 
 def registrar_asistencia(matricula: str, tipo_registro: str) -> dict:
     """
-    Registra una asistencia en la colección semanal correspondiente
+    Registra asistencia por día: un documento por día por usuario.
+    
+    - Si tipo_registro = "entrada": crea o actualiza la hora de entrada.
+    - Si tipo_registro = "salida": actualiza el documento existente del día.
     """
     db = get_db()
-    
+
     # Obtener datos del usuario
     usuario = obtener_usuario_por_matricula(matricula)
     if not usuario.encontrado:
         raise ValueError(f"Usuario con matrícula {matricula} no encontrado")
-    
-    # Obtener nombre de la colección semanal
+
+    # Obtener colección semanal
     nombre_coleccion = obtener_nombre_coleccion_semanal()
-    
-    # Crear el registro de asistencia
-    ahora = datetime.now()
-    registro = {
-        "matricula": matricula,
-        "nombre_completo": usuario.nombre_completo,
-        "tipo_registro": tipo_registro,
-        "fecha": ahora.strftime("%Y-%m-%d"),
-        "hora": ahora.strftime("%H:%M:%S"),
-        "timestamp": ahora,
-        "carrera": usuario.carrera,
-        "tipo_usuario": usuario.tipo
-    }
-    
-    # Insertar en la colección semanal
     coleccion = db[nombre_coleccion]
-    resultado = coleccion.insert_one(registro)
-    
-    # Verificar si es el primer registro de la semana y generar Excel si es necesario
-    verificar_y_generar_excel_semanal(nombre_coleccion)
-    
-    return {
-        "id": str(resultado.inserted_id),
-        "mensaje": f"Asistencia del usuario registrada",
-        "registro": registro
-    }
+
+    # Fecha actual en formato YYYY-MM-DD
+    ahora = datetime.now()
+    fecha_hoy = ahora.strftime("%Y-%m-%d")
+    hora_actual = ahora.strftime("%H:%M")
+
+    # Buscar si ya existe un registro para ese usuario hoy
+    registro_existente = coleccion.find_one({
+        "matricula": matricula,
+        "fecha": fecha_hoy
+    })
+
+    # ----------------------------
+    # 1️⃣ Registrar ENTRADA
+    # ----------------------------
+    if tipo_registro == "entrada":
+        if registro_existente:
+            # Si ya tiene entrada, podemos actualizarla o no permitir duplicado
+            return {
+                "mensaje": "La entrada ya había sido registrada",
+                "registro": registro_existente
+            }
+
+        # Crear el registro del día
+        nuevo_registro = {
+            "matricula": matricula,
+            "nombre": usuario.nombre_completo,
+            "carrera": usuario.carrera,
+            "fecha": fecha_hoy,
+            "entrada": hora_actual,
+            "salida": None
+        }
+
+        resultado = coleccion.insert_one(nuevo_registro)
+
+        verificar_y_generar_excel_semanal(nombre_coleccion)
+
+        return {
+            "mensaje": "Entrada registrada",
+            "id": str(resultado.inserted_id),
+            "registro": nuevo_registro
+        }
+
+    # ----------------------------
+    # 2️⃣ Registrar SALIDA
+    # ----------------------------
+    elif tipo_registro == "salida":
+        if not registro_existente:
+            raise ValueError("No existe una entrada registrada para hoy")
+
+        if registro_existente.get("salida"):
+            return {
+                "mensaje": "La salida ya había sido registrada",
+                "registro": registro_existente
+            }
+
+        # Actualizar salida
+        coleccion.update_one(
+            {"_id": registro_existente["_id"]},
+            {"$set": {"salida": hora_actual}}
+        )
+
+        registro_existente["salida"] = hora_actual
+
+        return {
+            "mensaje": "Salida registrada",
+            "registro": registro_existente
+        }
+
+    else:
+        raise ValueError("tipo_registro debe ser 'entrada' o 'salida'")
+
 
 def verificar_y_generar_excel_semanal(nombre_coleccion: str):
     """
