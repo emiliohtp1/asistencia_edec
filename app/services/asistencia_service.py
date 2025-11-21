@@ -20,80 +20,67 @@ def obtener_nombre_coleccion_semanal():
     semana = inicio_semana.isocalendar()[1]
     return f"asistencias_{año}_Semana{semana:02d}"
 
-def registrar_asistencia(matricula: str):
+def registrar_asistencia(matricula: str) -> dict:
+    """
+    Registra ENTRADA o SALIDA automáticamente:
+    - Si no existe registro hoy → ENTRADA
+    - Si existe entrada sin salida → SALIDA
+    - Si ya tiene entrada y salida → Error
+    """
 
-    # === 1) Obtener datos del alumno ===
-    alumno = db["alumnos"].find_one({"matricula": matricula})
+    db = get_db()
 
-    if not alumno:
-        raise ValueError("La matrícula no existe.")
+    usuario = obtener_usuario_por_matricula(matricula)
+    if not usuario.encontrado:
+        raise ValueError(f"Usuario con matrícula {matricula} no encontrado")
 
-    nombre = alumno["nombre"]
-    carrera = alumno["carrera"]
+    nombre_coleccion = obtener_nombre_coleccion_semanal()
+    coleccion = db[nombre_coleccion]
 
-    # === 2) Fecha actual ===
-    fecha_hoy = datetime.now().strftime("%Y-%m-%d")
-    hora_actual = datetime.now().strftime("%H:%M")
+    hoy = datetime.now().strftime("%Y-%m-%d")
 
-    # === 3) Obtener último registro del día ===
-    registro = coleccion.find_one(
-        {"matricula": matricula, "fecha": fecha_hoy}
-    )
+    # Buscar si ya tiene registro hoy
+    registro_existente = coleccion.find_one({"matricula": matricula, "fecha": hoy})
 
-    # === PRIMER REGISTRO DEL DÍA → ENTRADA ===
-    if not registro:
-        nuevo_doc = {
+    ahora = datetime.now()
+
+    # === 1) NO EXISTE REGISTRO → ENTRADA ===
+    if registro_existente is None:
+        registro = {
             "matricula": matricula,
-            "nombre": nombre,
-            "carrera": carrera,
-            "fecha": fecha_hoy,
-            "entrada": hora_actual,
-            "salida": None
+            "nombre": usuario.nombre_completo,
+            "carrera": usuario.carrera,
+            "fecha": hoy,
+            "entrada": ahora.strftime("%H:%M"),
+            "salida": "no registrado",
         }
-        coleccion.insert_one(nuevo_doc)
-        return {"mensaje": "entrada registrada", "data": nuevo_doc}
 
-    # === YA TIENE ENTRADA PERO NO SALIDA → REGISTRAR SALIDA ===
-    if registro.get("entrada") and not registro.get("salida"):
-        coleccion.update_one(
-            {"_id": registro["_id"]},
-            {"$set": {"salida": hora_actual}}
-        )
-
-        registro["salida"] = hora_actual
-        return {"mensaje": "salida registrada", "data": registro}
-
-    # === YA TIENE ENTRADA Y SALIDA → NO REGISTRAR MÁS ===
-    raise ValueError("El alumno ya registró entrada y salida hoy.")
-
-    # ----------------------------
-    # 2️⃣ Registrar SALIDA
-    # ----------------------------
-    elif tipo_registro == "salida":
-        if not registro_existente:
-            raise ValueError("No existe una entrada registrada para hoy")
-
-        if registro_existente.get("salida"):
-            return {
-                "mensaje": "La salida ya había sido registrada",
-                "registro": registro_existente
-            }
-
-        # Actualizar salida
-        coleccion.update_one(
-            {"_id": registro_existente["_id"]},
-            {"$set": {"salida": hora_actual}}
-        )
-
-        registro_existente["salida"] = hora_actual
+        resultado = coleccion.insert_one(registro)
 
         return {
+            "id": str(resultado.inserted_id),
+            "mensaje": "Entrada registrada",
+            "registro": registro
+        }
+
+    # === 2) YA EXISTE ENTRADA Y NO SALIDA → SALIDA ===
+    if registro_existente.get("salida") == "no registrado":
+        coleccion.update_one(
+            {"_id": registro_existente["_id"]},
+            {"$set": {"salida": ahora.strftime("%H:%M")}}
+        )
+
+        registro_existente["salida"] = ahora.strftime("%H:%M")
+
+        return {
+            "id": str(registro_existente["_id"]),
             "mensaje": "Salida registrada",
             "registro": registro_existente
         }
 
-    else:
-        raise ValueError("tipo_registro debe ser 'entrada' o 'salida'")
+    # === 3) YA TIENE ENTRADA Y SALIDA ===
+    raise ValueError("El usuario ya registró entrada y salida hoy")
+
 
 
 def verificar_y_generar_excel_semanal(nombre_coleccion: str):

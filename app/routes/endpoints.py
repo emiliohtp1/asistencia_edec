@@ -71,22 +71,19 @@ async def obtener_maestros():
 # ============================================================================
 
 @router.post("/api/asistencias/registrar", tags=["asistencias"])
-async def crear_registro_asistencia(asistencia: AsistenciaCreate):
-    """
-    Registra automáticamente entrada o salida dependiendo
-    del último registro del alumno.
-    """
+async def crear_registro_asistencia(asistencia: dict):
     try:
         resultado = registrar_asistencia(
-            matricula=asistencia.matricula
+            matricula=asistencia["matricula"]
         )
         return resultado
 
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @router.get("/api/asistencias/semana-actual", tags=["asistencias"])
