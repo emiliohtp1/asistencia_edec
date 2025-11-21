@@ -73,24 +73,21 @@ async def obtener_maestros():
 @router.post("/api/asistencias/registrar", tags=["asistencias"])
 async def crear_registro_asistencia(asistencia: AsistenciaCreate):
     """
-    Registra una nueva asistencia (entrada o salida) en colecciones semanales
+    Registra automáticamente entrada o salida dependiendo
+    del último registro del alumno.
     """
     try:
-        if asistencia.tipo_registro not in ["entrada", "salida"]:
-            raise HTTPException(
-                status_code=400, 
-                detail="El tipo_registro debe ser 'entrada' o 'salida'"
-            )
-        
         resultado = registrar_asistencia(
-            matricula=asistencia.matricula,
-            tipo_registro=asistencia.tipo_registro
+            matricula=asistencia.matricula
         )
         return resultado
+
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/api/asistencias/semana-actual", tags=["asistencias"])
 async def obtener_asistencias_semana_actual():
