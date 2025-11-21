@@ -9,7 +9,7 @@ from app.services.asistencia_service import (
     obtener_nombre_coleccion_semanal,
     obtener_todas_asistencias,
     crear_asistencia_directa,
-    obtener_todos_usuarios_login
+    obtener_todos_usuarios_db
 )
 from app.models.usuario import UsuarioResponse
 from app.models.asistencia import AsistenciaCreate, AsistenciaDirectaCreate
@@ -150,7 +150,7 @@ async def obtener_todos_usuarios():
     """
     try:
         # ⚠️ CORRECCIÓN CLAVE: Llama a la función de la BD, NO a sí misma
-        usuarios = obtener_todos_usuarios_login() 
+        usuarios = obtener_todos_usuarios_db() 
         
         return {
             "login": usuarios
