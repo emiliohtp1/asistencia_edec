@@ -2,14 +2,18 @@
 Archivo único con todos los endpoints de la API
 """
 from fastapi import APIRouter, HTTPException
-from app.services.usuario_service import obtener_usuario_por_matricula, obtener_todos_alumnos, obtener_todos_maestros
+from app.services.usuario_service import (
+    obtener_usuario_por_matricula,
+    obtener_usuario_por_credenciales_db,
+    obtener_todos_alumnos,
+    obtener_todos_maestros
+)
 from app.services.asistencia_service import (
     registrar_asistencia, 
     obtener_asistencias_semana, 
     obtener_nombre_coleccion_semanal,
     obtener_todas_asistencias,
     crear_asistencia_directa,
-    obtener_todos_usuarios_db
 )
 from app.models.usuario import UsuarioResponse, LoginRequest
 from app.models.asistencia import AsistenciaCreate, AsistenciaDirectaCreate

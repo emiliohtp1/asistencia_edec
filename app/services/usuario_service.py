@@ -65,3 +65,22 @@ def obtener_todos_maestros() -> List[Dict]:
     
     return maestros
 
+def obtener_usuario_por_credenciales_db(username: str, password: str):
+    """
+    Busca un usuario en la colección 'login' por username y password.
+    """
+    db = get_db()
+    coleccion = db.login
+
+    usuario = coleccion.find_one({
+        "username": username,
+        "password": password
+    })
+
+    if not usuario:
+        return None
+
+    # Convertir _id a string
+    usuario["_id"] = str(usuario["_id"])
+
+    return usuario
