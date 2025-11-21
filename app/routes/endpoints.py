@@ -151,8 +151,7 @@ async def obtener_todos_usuarios_login():
     try:
         usuarios = obtener_todos_usuarios_login()
         return {
-            "total": len(usuarios),
-            "usuarios": usuarios
+            "login": usuarios
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
