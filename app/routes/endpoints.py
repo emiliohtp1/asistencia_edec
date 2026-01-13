@@ -10,13 +10,11 @@ from app.services.usuario_service import (
 )
 from app.services.asistencia_service import (
     registrar_asistencia, 
-    obtener_asistencias_semana, 
-    obtener_nombre_coleccion_semanal,
     obtener_todas_asistencias,
-    crear_asistencia_directa,
+    obtener_asistencias_por_matricula,
 )
 from app.models.usuario import UsuarioResponse, LoginRequest
-from app.models.asistencia import AsistenciaCreate, AsistenciaDirectaCreate
+from app.models.asistencia import AsistenciaCreate
 
 # Router principal
 router = APIRouter()
@@ -72,7 +70,15 @@ async def obtener_maestros():
 
 @router.post("/api/asistencias/registrar", tags=["asistencias"])
 async def crear_registro_asistencia(asistencia: dict):
+    """
+    Registra la asistencia de entrada de una matrícula.
+    Solo permite un registro por matrícula por día.
+    Guarda: matrícula, fecha (DD/MM/YYYY), hora (HH:MM) en horario de México.
+    """
     try:
+        if "matricula" not in asistencia:
+            raise HTTPException(status_code=400, detail="La matrícula es requerida")
+        
         resultado = registrar_asistencia(
             matricula=asistencia["matricula"]
         )
@@ -81,21 +87,22 @@ async def crear_registro_asistencia(asistencia: dict):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 
-@router.get("/api/asistencias/semana-actual", tags=["asistencias"])
-async def obtener_asistencias_semana_actual():
+@router.get("/api/asistencias/matricula/{matricula}", tags=["asistencias"])
+async def obtener_asistencias_por_matricula_endpoint(matricula: str):
     """
-    Obtiene todas las asistencias de la semana actual (colecciones semanales)
+    Obtiene todos los registros de asistencia de una matrícula específica
     """
     try:
-        nombre_coleccion = obtener_nombre_coleccion_semanal()
-        asistencias = obtener_asistencias_semana(nombre_coleccion)
+        asistencias = obtener_asistencias_por_matricula(matricula)
         return {
-            "coleccion": nombre_coleccion,
+            "matricula": matricula,
             "total": len(asistencias),
             "asistencias": asistencias
         }
@@ -105,41 +112,18 @@ async def obtener_asistencias_semana_actual():
 @router.get("/api/asistencias/todas", tags=["asistencias"])
 async def obtener_todas_las_asistencias():
     """
-    Obtiene todos los registros de la colección 'asistencia'
+    Obtiene todos los registros de la colección 'asistencia_general'
     """
     try:
         asistencias = obtener_todas_asistencias()
         return {
-            "coleccion": "asistencia",
+            "coleccion": "asistencia_general",
             "total": len(asistencias),
             "asistencias": asistencias
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/api/asistencias/crear", tags=["asistencias"])
-async def crear_asistencia_directa_endpoint(asistencia: AsistenciaDirectaCreate):
-    """
-    Crea un registro de asistencia directamente en la colección 'asistencia'
-    """
-    try:
-        # Validar tipo_registro
-        if asistencia.tipo_registro not in ["entrada", "salida"]:
-            raise HTTPException(
-                status_code=400,
-                detail="El tipo_registro debe ser 'entrada' o 'salida'"
-            )
-        
-        # Convertir el modelo a diccionario
-        datos = asistencia.dict()
-        
-        # Crear la asistencia
-        resultado = crear_asistencia_directa(datos)
-        return resultado
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/api/usuarios/login", tags=["login"])
 async def login_usuario(datos: LoginRequest):

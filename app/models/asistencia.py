@@ -3,24 +3,13 @@ from datetime import datetime
 from typing import Optional
 
 class AsistenciaCreate(BaseModel):
+    """Modelo para crear un registro de asistencia"""
     matricula: str
-    tipo_registro: str  # "entrada" o "salida"
-
-class AsistenciaDirectaCreate(BaseModel):
-    """Modelo para crear asistencia directamente en la colección 'asistencia'"""
-    matricula: str
-    nombre_completo: str
-    tipo_registro: str
-    fecha: Optional[str] = None  # Si no se proporciona, se usa la fecha actual
-    hora: Optional[str] = None  # Si no se proporciona, se usa la hora actual
-    carrera: Optional[str] = None
-    tipo_usuario: Optional[str] = None
 
 class Asistencia(BaseModel):
+    """Modelo de respuesta para un registro de asistencia"""
     matricula: str
-    nombre_completo: str
-    tipo_registro: str
-    fecha: str
-    hora: str
+    fecha: str  # Formato: DD/MM/YYYY
+    hora: str  # Formato: HH:MM
     timestamp: datetime
 
