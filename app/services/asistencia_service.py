@@ -71,7 +71,7 @@ def obtener_todas_asistencias() -> List[Dict]:
     Obtiene todos los registros de la colección 'asistencia_general'
     """
     db = get_db()
-    coleccion = db.asistencia_general_apodaca
+    coleccion = db.asistencia_general
     registros = list(coleccion.find().sort("timestamp", -1))  # Más recientes primero
     
     # Convertir ObjectId a string y timestamp a ISO format
@@ -89,6 +89,22 @@ def obtener_asistencias_por_matricula(matricula: str) -> List[Dict]:
     db = get_db()
     coleccion = db.asistencia_general
     registros = list(coleccion.find({"matricula": matricula}).sort("timestamp", -1))
+    
+    # Convertir ObjectId a string y timestamp a ISO format
+    for registro in registros:
+        registro["_id"] = str(registro["_id"])
+        if isinstance(registro.get("timestamp"), datetime):
+            registro["timestamp"] = registro["timestamp"].isoformat()
+    
+    return registros
+
+def obtener_todas_asistencias_apodaca() -> List[Dict]:
+    """
+    Obtiene todos los registros de asistencia de la colección 'asistencia_general_apodaca'
+    """
+    db = get_db()
+    coleccion = db.asistencia_general_apodaca
+    registros = list(coleccion.find().sort("timestamp", -1))  # Más recientes primero
     
     # Convertir ObjectId a string y timestamp a ISO format
     for registro in registros:
