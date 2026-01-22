@@ -19,7 +19,7 @@ class LoginRequest(BaseModel):
     password: str
 
 class usuario_datos(BaseModel):
-    matricula: int
+    matricula: str
     nombre: str
     coordinador: str
     graduado: str
