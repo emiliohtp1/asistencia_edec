@@ -98,17 +98,17 @@ def obtener_usuario_por_credenciales_db(username: str, password: str):
 def obtener_datos_alumno_bachillerato(matricula: str) -> Optional[usuario_datos]:
     """
     Obtiene los datos de un alumno de bachillerato por su matrícula
-    de la colección 'alumnos_bachillerato'
+    de la colección 'alumnos_bachillerato_apodaca'
     """
     db = get_db()
     # Buscar por Matricula (con mayúscula) como string
-    alumno = db.alumnos_bachillerato.find_one({"Matricula": matricula})
+    alumno = db.alumnos_bachillerato_apodaca.find_one({"Matricula": matricula})
     
     # Si no se encuentra, intentar como int
     if not alumno:
         try:
             matricula_int = int(matricula)
-            alumno = db.alumnos_bachillerato.find_one({"Matricula": matricula_int})
+            alumno = db.alumnos_bachillerato_apodaca.find_one({"Matricula": matricula_int})
         except (ValueError, TypeError):
             pass
     
@@ -134,17 +134,17 @@ def obtener_datos_alumno_bachillerato(matricula: str) -> Optional[usuario_datos]
 def obtener_datos_alumno_universidad(matricula: str) -> Optional[usuario_datos]:
     """
     Obtiene los datos de un alumno de universidad por su matrícula
-    de la colección 'alumnos_universidad'
+    de la colección 'alumnos_universidad_apodaca'
     """
     db = get_db()
     # Buscar por Matricula (con mayúscula) como string
-    alumno = db.alumnos_universidad.find_one({"Matricula": matricula})
+    alumno = db.alumnos_universidad_apodaca.find_one({"Matricula": matricula})
     
     # Si no se encuentra, intentar como int
     if not alumno:
         try:
             matricula_int = int(matricula)
-            alumno = db.alumnos_universidad.find_one({"Matricula": matricula_int})
+            alumno = db.alumnos_universidad_apodaca.find_one({"Matricula": matricula_int})
         except (ValueError, TypeError):
             pass
     
@@ -196,7 +196,7 @@ def obtener_todos_alumnos_bachillerato() -> List[usuario_datos]:
 
 def obtener_todos_alumnos_universidad() -> List[usuario_datos]:
     """
-    Obtiene todos los alumnos de universidad de la colección 'alumnos_universidad'
+    Obtiene todos los alumnos de universidad de la colección 'alumnos_universidad_apodaca'
     """
     db = get_db()
     alumnos_raw = list(db.alumnos_universidad_apodaca.find().sort("Matricula", 1))
