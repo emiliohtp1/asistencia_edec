@@ -17,3 +17,14 @@ class UsuarioResponse(BaseModel):
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+class usuario_datos(BaseModel):
+    matricula: int
+    nombre: str
+    coordinador: str
+    graduado: str
+    correo: str
+    campus: str
+    programa: str
+    ciclo: str
+    turno: str

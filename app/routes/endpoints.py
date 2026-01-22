@@ -6,14 +6,16 @@ from app.services.usuario_service import (
     obtener_usuario_por_matricula,
     obtener_usuario_por_credenciales_db,
     obtener_todos_alumnos,
-    obtener_todos_maestros
+    obtener_todos_maestros,
+    obtener_datos_alumno_bachillerato,
+    obtener_datos_alumno_universidad
 )
 from app.services.asistencia_service import (
     registrar_asistencia, 
     obtener_todas_asistencias,
     obtener_asistencias_por_matricula,
 )
-from app.models.usuario import UsuarioResponse, LoginRequest
+from app.models.usuario import UsuarioResponse, LoginRequest, usuario_datos
 from app.models.asistencia import AsistenciaCreate
 
 # Router principal
@@ -61,6 +63,38 @@ async def obtener_maestros():
             "total": len(maestros),
             "maestros": maestros
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/api/alumnos/bachillerato/{matricula}", response_model=usuario_datos, tags=["alumnos"])
+async def obtener_alumno_bachillerato(matricula: int):
+    """
+    Obtiene los datos de un alumno de bachillerato por su matrícula
+    de la colección 'alumnos_bachillerato'
+    """
+    try:
+        alumno = obtener_datos_alumno_bachillerato(matricula)
+        if not alumno:
+            raise HTTPException(status_code=404, detail="Alumno no encontrado")
+        return alumno
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/api/alumnos/universidad/{matricula}", response_model=usuario_datos, tags=["alumnos"])
+async def obtener_alumno_universidad(matricula: int):
+    """
+    Obtiene los datos de un alumno de universidad por su matrícula
+    de la colección 'alumnos_universidad'
+    """
+    try:
+        alumno = obtener_datos_alumno_universidad(matricula)
+        if not alumno:
+            raise HTTPException(status_code=404, detail="Alumno no encontrado")
+        return alumno
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -1,6 +1,6 @@
 from app.database import get_db
-from app.models.usuario import UsuarioResponse
-from typing import List, Dict
+from app.models.usuario import UsuarioResponse, usuario_datos
+from typing import List, Dict, Optional
 
 def obtener_usuario_por_matricula(matricula: str) -> UsuarioResponse:
     """
@@ -84,3 +84,49 @@ def obtener_usuario_por_credenciales_db(username: str, password: str):
     usuario["_id"] = str(usuario["_id"])
 
     return usuario
+
+def obtener_datos_alumno_bachillerato(matricula: int) -> Optional[usuario_datos]:
+    """
+    Obtiene los datos de un alumno de bachillerato por su matrícula
+    de la colección 'alumnos_bachillerato'
+    """
+    db = get_db()
+    alumno = db.alumnos_bachillerato.find_one({"matricula": matricula})
+    
+    if not alumno:
+        return None
+    
+    return usuario_datos(
+        matricula=alumno["matricula"],
+        nombre=alumno["nombre"],
+        coordinador=alumno["coordinador"],
+        graduado=alumno["graduado"],
+        correo=alumno["correo"],
+        campus=alumno["campus"],
+        programa=alumno["programa"],
+        ciclo=alumno["ciclo"],
+        turno=alumno["turno"]
+    )
+
+def obtener_datos_alumno_universidad(matricula: int) -> Optional[usuario_datos]:
+    """
+    Obtiene los datos de un alumno de universidad por su matrícula
+    de la colección 'alumnos_universidad'
+    """
+    db = get_db()
+    alumno = db.alumnos_universidad.find_one({"matricula": matricula})
+    
+    if not alumno:
+        return None
+    
+    return usuario_datos(
+        matricula=alumno["matricula"],
+        nombre=alumno["nombre"],
+        coordinador=alumno["coordinador"],
+        graduado=alumno["graduado"],
+        correo=alumno["correo"],
+        campus=alumno["campus"],
+        programa=alumno["programa"],
+        ciclo=alumno["ciclo"],
+        turno=alumno["turno"]
+    )
