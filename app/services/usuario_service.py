@@ -172,7 +172,7 @@ def obtener_todos_alumnos_bachillerato() -> List[usuario_datos]:
     Obtiene todos los alumnos de bachillerato de la colección 'alumnos_bachillerato'
     """
     db = get_db()
-    alumnos_raw = list(db.alumnos_bachillerato.find().sort("Matricula", 1))
+    alumnos_raw = list(db.alumnos_bachillerato_apodaca.find().sort("Matricula", 1))
     
     alumnos = []
     for alumno_raw in alumnos_raw:
@@ -199,7 +199,7 @@ def obtener_todos_alumnos_universidad() -> List[usuario_datos]:
     Obtiene todos los alumnos de universidad de la colección 'alumnos_universidad'
     """
     db = get_db()
-    alumnos_raw = list(db.alumnos_universidad.find().sort("Matricula", 1))
+    alumnos_raw = list(db.alumnos_universidad_apodaca.find().sort("Matricula", 1))
     
     alumnos = []
     for alumno_raw in alumnos_raw:
