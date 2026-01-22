@@ -68,6 +68,34 @@ async def obtener_maestros():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/api/alumnos/bachillerato", tags=["alumnos"])
+async def obtener_todos_alumnos_bachillerato_endpoint():
+    """
+    Obtiene todos los alumnos de bachillerato de la colección 'alumnos_bachillerato'
+    """
+    try:
+        alumnos = obtener_todos_alumnos_bachillerato()
+        return {
+            "total": len(alumnos),
+            "alumnos": alumnos
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/api/alumnos/universidad", tags=["alumnos"])
+async def obtener_todos_alumnos_universidad_endpoint():
+    """
+    Obtiene todos los alumnos de universidad de la colección 'alumnos_universidad'
+    """
+    try:
+        alumnos = obtener_todos_alumnos_universidad()
+        return {
+            "total": len(alumnos),
+            "alumnos": alumnos
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/api/alumnos/bachillerato/{matricula}", response_model=usuario_datos, tags=["alumnos"])
 async def obtener_alumno_bachillerato(matricula: str):
     """
@@ -97,34 +125,6 @@ async def obtener_alumno_universidad(matricula: str):
         return alumno
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/api/alumnos/bachillerato/todos", tags=["alumnos"])
-async def obtener_todos_alumnos_bachillerato_endpoint():
-    """
-    Obtiene todos los alumnos de bachillerato de la colección 'alumnos_bachillerato'
-    """
-    try:
-        alumnos = obtener_todos_alumnos_bachillerato()
-        return {
-            "total": len(alumnos),
-            "alumnos": alumnos
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/api/alumnos/universidad/todos", tags=["alumnos"])
-async def obtener_todos_alumnos_universidad_endpoint():
-    """
-    Obtiene todos los alumnos de universidad de la colección 'alumnos_universidad'
-    """
-    try:
-        alumnos = obtener_todos_alumnos_universidad()
-        return {
-            "total": len(alumnos),
-            "alumnos": alumnos
-        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
