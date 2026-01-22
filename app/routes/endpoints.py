@@ -120,14 +120,19 @@ async def crear_registro_asistencia(asistencia: dict):
     """
     Registra la asistencia de entrada de una matrícula.
     Solo permite un registro por matrícula por día.
-    Guarda: matrícula, fecha (DD/MM/YYYY), hora (HH:MM) en horario de México.
+    Guarda: Matricula, Nombre, Fecha (DD/MM/YYYY), Hora (HH:MM) en horario de México.
+    Almacena en la colección 'asistencia_general_apodaca'.
     """
     try:
         if "matricula" not in asistencia:
             raise HTTPException(status_code=400, detail="La matrícula es requerida")
         
+        if "nombre" not in asistencia:
+            raise HTTPException(status_code=400, detail="El nombre es requerido")
+        
         resultado = registrar_asistencia(
-            matricula=asistencia["matricula"]
+            matricula=asistencia["matricula"],
+            nombre=asistencia["nombre"]
         )
         return resultado
 

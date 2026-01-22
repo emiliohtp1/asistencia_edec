@@ -1,3 +1,12 @@
+"""
+Servicios de lógica de negocio para operaciones con asistencias.
+
+Este módulo contiene las funciones que interactúan con MongoDB para:
+- Registrar asistencias con matrícula, nombre, fecha y hora
+- Obtener listas completas de asistencias
+- Consultar asistencias por matrícula específica
+- Manejo de zona horaria de México para fechas y horas
+"""
 from datetime import datetime
 from app.database import get_db
 from typing import List, Dict
@@ -11,16 +20,16 @@ def obtener_hora_mexico():
     ahora_mexico = datetime.now(zona_mexico)
     return ahora_mexico
 
-def registrar_asistencia(matricula: str) -> dict:
+def registrar_asistencia(matricula: str, nombre: str) -> dict:
     """
     Registra la asistencia de entrada de una matrícula.
     - Solo permite un registro por matrícula por día
-    - Guarda: matrícula, fecha (DD/MM/YYYY), hora (HH:MM)
-    - Almacena en la colección 'asistencia_general'
+    - Guarda: Matricula, Nombre, Fecha (DD/MM/YYYY), Hora (HH:MM)
+    - Almacena en la colección 'asistencia_general_apodaca'
     """
 
     db = get_db()
-    coleccion = db.asistencia_general
+    coleccion = db.asistencia_general_apodaca
 
     # Obtener fecha y hora en horario de México
     ahora_mexico = obtener_hora_mexico()
@@ -29,18 +38,19 @@ def registrar_asistencia(matricula: str) -> dict:
 
     # Verificar si ya existe un registro para esta matrícula hoy
     registro_existente = coleccion.find_one({
-        "matricula": matricula,
-        "fecha": fecha_formato
+        "Matricula": matricula,
+        "Fecha": fecha_formato
     })
 
     if registro_existente:
         raise ValueError(f"La matrícula {matricula} ya tiene un registro de asistencia para hoy ({fecha_formato})")
 
-    # Crear el registro
+    # Crear el registro con campos en mayúscula (como en MongoDB)
     registro = {
-        "matricula": matricula,
-        "fecha": fecha_formato,
-        "hora": hora_formato,
+        "Matricula": matricula,
+        "Nombre": nombre,
+        "Fecha": fecha_formato,
+        "Hora": hora_formato,
         "timestamp": ahora_mexico
     }
 
