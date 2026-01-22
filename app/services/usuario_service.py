@@ -91,42 +91,34 @@ def obtener_datos_alumno_bachillerato(matricula: str) -> Optional[usuario_datos]
     de la colección 'alumnos_bachillerato'
     """
     db = get_db()
-    # Intentar buscar como string primero (formato más común en MongoDB)
-    alumno = db.alumnos_bachillerato.find_one({"matricula": matricula})
+    # Buscar por Matricula (con mayúscula) como string
+    alumno = db.alumnos_bachillerato.find_one({"Matricula": matricula})
     
     # Si no se encuentra, intentar como int
     if not alumno:
         try:
             matricula_int = int(matricula)
-            alumno = db.alumnos_bachillerato.find_one({"matricula": matricula_int})
+            alumno = db.alumnos_bachillerato.find_one({"Matricula": matricula_int})
         except (ValueError, TypeError):
             pass
     
     if not alumno:
         return None
     
-    # Convertir matrícula a int para el modelo
-    matricula_valor = alumno["matricula"]
-    if isinstance(matricula_valor, str):
-        try:
-            matricula_valor = int(matricula_valor)
-        except (ValueError, TypeError):
-            try:
-                matricula_valor = int(matricula)
-            except (ValueError, TypeError):
-                # Si ambos fallan, usar el valor original
-                pass
+    # Mapear campos de MongoDB (con mayúscula) al modelo (minúscula)
+    # La matrícula se mantiene como string según el modelo
+    matricula_valor = str(alumno.get("Matricula", matricula))
     
     return usuario_datos(
         matricula=matricula_valor,
-        nombre=alumno["nombre"],
-        coordinador=alumno["coordinador"],
-        graduado=alumno["graduado"],
-        correo=alumno["correo"],
-        campus=alumno["campus"],
-        programa=alumno["programa"],
-        ciclo=alumno["ciclo"],
-        turno=alumno["turno"]
+        nombre=alumno.get("Nombre", ""),
+        coordinador=alumno.get("Coordinador", ""),
+        graduado=alumno.get("Graduado", ""),
+        correo=alumno.get("Correo", ""),
+        campus=alumno.get("Campus", ""),
+        programa=alumno.get("Programa", ""),
+        ciclo=alumno.get("Ciclo", ""),
+        turno=alumno.get("Turno", "")
     )
 
 def obtener_datos_alumno_universidad(matricula: str) -> Optional[usuario_datos]:
@@ -135,40 +127,86 @@ def obtener_datos_alumno_universidad(matricula: str) -> Optional[usuario_datos]:
     de la colección 'alumnos_universidad'
     """
     db = get_db()
-    # Intentar buscar como string primero (formato más común en MongoDB)
-    alumno = db.alumnos_universidad.find_one({"matricula": matricula})
+    # Buscar por Matricula (con mayúscula) como string
+    alumno = db.alumnos_universidad.find_one({"Matricula": matricula})
     
     # Si no se encuentra, intentar como int
     if not alumno:
         try:
             matricula_int = int(matricula)
-            alumno = db.alumnos_universidad.find_one({"matricula": matricula_int})
+            alumno = db.alumnos_universidad.find_one({"Matricula": matricula_int})
         except (ValueError, TypeError):
             pass
     
     if not alumno:
         return None
     
-    # Convertir matrícula a int para el modelo
-    matricula_valor = alumno["matricula"]
-    if isinstance(matricula_valor, str):
-        try:
-            matricula_valor = int(matricula_valor)
-        except (ValueError, TypeError):
-            try:
-                matricula_valor = int(matricula)
-            except (ValueError, TypeError):
-                # Si ambos fallan, usar el valor original
-                pass
+    # Mapear campos de MongoDB (con mayúscula) al modelo (minúscula)
+    # La matrícula se mantiene como string según el modelo
+    matricula_valor = str(alumno.get("Matricula", matricula))
     
     return usuario_datos(
         matricula=matricula_valor,
-        nombre=alumno["nombre"],
-        coordinador=alumno["coordinador"],
-        graduado=alumno["graduado"],
-        correo=alumno["correo"],
-        campus=alumno["campus"],
-        programa=alumno["programa"],
-        ciclo=alumno["ciclo"],
-        turno=alumno["turno"]
+        nombre=alumno.get("Nombre", ""),
+        coordinador=alumno.get("Coordinador", ""),
+        graduado=alumno.get("Graduado", ""),
+        correo=alumno.get("Correo", ""),
+        campus=alumno.get("Campus", ""),
+        programa=alumno.get("Programa", ""),
+        ciclo=alumno.get("Ciclo", ""),
+        turno=alumno.get("Turno", "")
     )
+
+def obtener_todos_alumnos_bachillerato() -> List[usuario_datos]:
+    """
+    Obtiene todos los alumnos de bachillerato de la colección 'alumnos_bachillerato'
+    """
+    db = get_db()
+    alumnos_raw = list(db.alumnos_bachillerato.find().sort("Matricula", 1))
+    
+    alumnos = []
+    for alumno_raw in alumnos_raw:
+        # Mapear campos de MongoDB (con mayúscula) al modelo (minúscula)
+        matricula_valor = str(alumno_raw.get("Matricula", ""))
+        
+        alumno = usuario_datos(
+            matricula=matricula_valor,
+            nombre=alumno_raw.get("Nombre", ""),
+            coordinador=alumno_raw.get("Coordinador", ""),
+            graduado=alumno_raw.get("Graduado", ""),
+            correo=alumno_raw.get("Correo", ""),
+            campus=alumno_raw.get("Campus", ""),
+            programa=alumno_raw.get("Programa", ""),
+            ciclo=alumno_raw.get("Ciclo", ""),
+            turno=alumno_raw.get("Turno", "")
+        )
+        alumnos.append(alumno)
+    
+    return alumnos
+
+def obtener_todos_alumnos_universidad() -> List[usuario_datos]:
+    """
+    Obtiene todos los alumnos de universidad de la colección 'alumnos_universidad'
+    """
+    db = get_db()
+    alumnos_raw = list(db.alumnos_universidad.find().sort("Matricula", 1))
+    
+    alumnos = []
+    for alumno_raw in alumnos_raw:
+        # Mapear campos de MongoDB (con mayúscula) al modelo (minúscula)
+        matricula_valor = str(alumno_raw.get("Matricula", ""))
+        
+        alumno = usuario_datos(
+            matricula=matricula_valor,
+            nombre=alumno_raw.get("Nombre", ""),
+            coordinador=alumno_raw.get("Coordinador", ""),
+            graduado=alumno_raw.get("Graduado", ""),
+            correo=alumno_raw.get("Correo", ""),
+            campus=alumno_raw.get("Campus", ""),
+            programa=alumno_raw.get("Programa", ""),
+            ciclo=alumno_raw.get("Ciclo", ""),
+            turno=alumno_raw.get("Turno", "")
+        )
+        alumnos.append(alumno)
+    
+    return alumnos
