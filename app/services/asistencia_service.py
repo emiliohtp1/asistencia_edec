@@ -71,7 +71,7 @@ def obtener_todas_asistencias() -> List[Dict]:
     Obtiene todos los registros de la colección 'asistencia_general'
     """
     db = get_db()
-    coleccion = db.asistencia_general
+    coleccion = db.asistencia_general_apodaca
     registros = list(coleccion.find().sort("timestamp", -1))  # Más recientes primero
     
     # Convertir ObjectId a string y timestamp a ISO format
