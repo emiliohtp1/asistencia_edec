@@ -25,6 +25,7 @@ from app.services.asistencia_service import (
     obtener_todas_asistencias,
     obtener_asistencias_por_matricula,
     obtener_todas_asistencias_apodaca,
+    obtener_asistencias_apodaca_por_matricula,
 )
 from app.models.usuario import UsuarioResponse, LoginRequest, usuario_datos
 from app.models.asistencia import AsistenciaCreate
@@ -185,6 +186,23 @@ async def obtener_todas_las_asistencias_apodaca():
     try:
         asistencias = obtener_todas_asistencias_apodaca()
         return {
+            "coleccion": "asistencia_general_apodaca",
+            "total": len(asistencias),
+            "asistencias": asistencias
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/api/asistencias/apodaca/{matricula}", tags=["asistencias"])
+async def obtener_asistencias_apodaca_por_matricula_endpoint(matricula: str):
+    """
+    Obtiene todos los registros de asistencia de una matrícula específica
+    de la colección 'asistencia_general_apodaca'
+    """
+    try:
+        asistencias = obtener_asistencias_apodaca_por_matricula(matricula)
+        return {
+            "matricula": matricula,
             "coleccion": "asistencia_general_apodaca",
             "total": len(asistencias),
             "asistencias": asistencias

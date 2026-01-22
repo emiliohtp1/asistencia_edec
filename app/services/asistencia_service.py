@@ -113,3 +113,29 @@ def obtener_todas_asistencias_apodaca() -> List[Dict]:
             registro["timestamp"] = registro["timestamp"].isoformat()
     
     return registros
+
+def obtener_asistencias_apodaca_por_matricula(matricula: str) -> List[Dict]:
+    """
+    Obtiene todos los registros de asistencia de una matrícula específica
+    de la colección 'asistencia_general_apodaca'
+    """
+    db = get_db()
+    coleccion = db.asistencia_general_apodaca
+    # Buscar por Matricula (con mayúscula) como string
+    registros = list(coleccion.find({"Matricula": matricula}).sort("timestamp", -1))
+    
+    # Si no se encuentra, intentar como int
+    if not registros:
+        try:
+            matricula_int = int(matricula)
+            registros = list(coleccion.find({"Matricula": matricula_int}).sort("timestamp", -1))
+        except (ValueError, TypeError):
+            pass
+    
+    # Convertir ObjectId a string y timestamp a ISO format
+    for registro in registros:
+        registro["_id"] = str(registro["_id"])
+        if isinstance(registro.get("timestamp"), datetime):
+            registro["timestamp"] = registro["timestamp"].isoformat()
+    
+    return registros
