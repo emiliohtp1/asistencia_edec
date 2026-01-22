@@ -1,3 +1,10 @@
+"""
+Gestión de conexión a la base de datos MongoDB.
+
+Este módulo maneja la conexión y desconexión de MongoDB usando PyMongo.
+Proporciona una instancia singleton de la base de datos que se reutiliza
+en toda la aplicación para evitar múltiples conexiones.
+"""
 from pymongo import MongoClient
 from app.config import Config
 

@@ -1,3 +1,13 @@
+"""
+Servicios de lógica de negocio para operaciones con usuarios.
+
+Este módulo contiene las funciones que interactúan con MongoDB para:
+- Buscar usuarios (alumnos y maestros) por matrícula
+- Obtener listas completas de alumnos y maestros
+- Autenticar usuarios mediante credenciales
+- Obtener datos detallados de alumnos de bachillerato y universidad
+  (incluye mapeo de campos de MongoDB con mayúscula inicial al modelo)
+"""
 from app.database import get_db
 from app.models.usuario import UsuarioResponse, usuario_datos
 from typing import List, Dict, Optional

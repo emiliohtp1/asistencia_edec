@@ -1,3 +1,13 @@
+"""
+Configuración de la aplicación mediante variables de entorno.
+
+Este módulo carga las variables de entorno desde un archivo .env y define
+la clase Config con todos los parámetros necesarios para la aplicación:
+- MONGODB_URI: URI de conexión a MongoDB (desde Render.com o local)
+- DATABASE_NAME: Nombre de la base de datos
+- HOST y PORT: Configuración del servidor
+- EXCEL_DIR: Directorio para reportes Excel
+"""
 import os
 from dotenv import load_dotenv
 

@@ -1,5 +1,13 @@
 """
-Archivo único con todos los endpoints de la API
+Endpoints de la API REST para el sistema de asistencia EDEC.
+
+Este módulo define todas las rutas HTTP de la API, organizadas en:
+- Endpoints de usuarios: búsqueda de alumnos y maestros
+- Endpoints de alumnos: datos detallados de bachillerato y universidad
+- Endpoints de asistencias: registro y consulta de asistencias
+- Endpoints de autenticación: login de usuarios
+
+Las rutas están organizadas con tags para documentación automática en Swagger/OpenAPI.
 """
 from fastapi import APIRouter, HTTPException
 from app.services.usuario_service import (
@@ -27,32 +35,7 @@ router = APIRouter()
 # ENDPOINTS DE USUARIOS
 # ============================================================================
 
-@router.get("/api/usuarios/{matricula}", response_model=UsuarioResponse, tags=["usuarios"])
-async def obtener_usuario(matricula: str):
-    """
-    Obtiene la información de un usuario (alumno o maestro) por su matrícula
-    """
-    try:
-        usuario = obtener_usuario_por_matricula(matricula)
-        if not usuario.encontrado:
-            raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        return usuario
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/api/usuarios/alumnos/todos", tags=["usuarios"])
-async def obtener_alumnos():
-    """
-    Obtiene todos los alumnos de la colección 'alumnos'
-    """
-    try:
-        alumnos = obtener_todos_alumnos()
-        return {
-            "total": len(alumnos),
-            "alumnos": alumnos
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/api/usuarios/maestros/todos", tags=["usuarios"])
 async def obtener_maestros():
