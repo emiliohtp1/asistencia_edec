@@ -85,19 +85,40 @@ def obtener_usuario_por_credenciales_db(username: str, password: str):
 
     return usuario
 
-def obtener_datos_alumno_bachillerato(matricula: int) -> Optional[usuario_datos]:
+def obtener_datos_alumno_bachillerato(matricula: str) -> Optional[usuario_datos]:
     """
     Obtiene los datos de un alumno de bachillerato por su matrícula
     de la colección 'alumnos_bachillerato'
     """
     db = get_db()
+    # Intentar buscar como string primero (formato más común en MongoDB)
     alumno = db.alumnos_bachillerato.find_one({"matricula": matricula})
+    
+    # Si no se encuentra, intentar como int
+    if not alumno:
+        try:
+            matricula_int = int(matricula)
+            alumno = db.alumnos_bachillerato.find_one({"matricula": matricula_int})
+        except (ValueError, TypeError):
+            pass
     
     if not alumno:
         return None
     
+    # Convertir matrícula a int para el modelo
+    matricula_valor = alumno["matricula"]
+    if isinstance(matricula_valor, str):
+        try:
+            matricula_valor = int(matricula_valor)
+        except (ValueError, TypeError):
+            try:
+                matricula_valor = int(matricula)
+            except (ValueError, TypeError):
+                # Si ambos fallan, usar el valor original
+                pass
+    
     return usuario_datos(
-        matricula=alumno["matricula"],
+        matricula=matricula_valor,
         nombre=alumno["nombre"],
         coordinador=alumno["coordinador"],
         graduado=alumno["graduado"],
@@ -108,19 +129,40 @@ def obtener_datos_alumno_bachillerato(matricula: int) -> Optional[usuario_datos]
         turno=alumno["turno"]
     )
 
-def obtener_datos_alumno_universidad(matricula: int) -> Optional[usuario_datos]:
+def obtener_datos_alumno_universidad(matricula: str) -> Optional[usuario_datos]:
     """
     Obtiene los datos de un alumno de universidad por su matrícula
     de la colección 'alumnos_universidad'
     """
     db = get_db()
+    # Intentar buscar como string primero (formato más común en MongoDB)
     alumno = db.alumnos_universidad.find_one({"matricula": matricula})
+    
+    # Si no se encuentra, intentar como int
+    if not alumno:
+        try:
+            matricula_int = int(matricula)
+            alumno = db.alumnos_universidad.find_one({"matricula": matricula_int})
+        except (ValueError, TypeError):
+            pass
     
     if not alumno:
         return None
     
+    # Convertir matrícula a int para el modelo
+    matricula_valor = alumno["matricula"]
+    if isinstance(matricula_valor, str):
+        try:
+            matricula_valor = int(matricula_valor)
+        except (ValueError, TypeError):
+            try:
+                matricula_valor = int(matricula)
+            except (ValueError, TypeError):
+                # Si ambos fallan, usar el valor original
+                pass
+    
     return usuario_datos(
-        matricula=alumno["matricula"],
+        matricula=matricula_valor,
         nombre=alumno["nombre"],
         coordinador=alumno["coordinador"],
         graduado=alumno["graduado"],

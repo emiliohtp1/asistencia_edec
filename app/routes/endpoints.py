@@ -67,7 +67,7 @@ async def obtener_maestros():
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/api/alumnos/bachillerato/{matricula}", response_model=usuario_datos, tags=["alumnos"])
-async def obtener_alumno_bachillerato(matricula: int):
+async def obtener_alumno_bachillerato(matricula: str):
     """
     Obtiene los datos de un alumno de bachillerato por su matrícula
     de la colección 'alumnos_bachillerato'
@@ -83,7 +83,7 @@ async def obtener_alumno_bachillerato(matricula: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/api/alumnos/universidad/{matricula}", response_model=usuario_datos, tags=["alumnos"])
-async def obtener_alumno_universidad(matricula: int):
+async def obtener_alumno_universidad(matricula: str):
     """
     Obtiene los datos de un alumno de universidad por su matrícula
     de la colección 'alumnos_universidad'
