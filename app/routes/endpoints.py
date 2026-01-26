@@ -21,7 +21,9 @@ from app.services.usuario_service import (
     obtener_todos_alumnos_universidad,
     crear_usuario_apodaca,
     autenticar_usuario_apodaca,
-    cambiar_contraseña_usuario_apodaca
+    cambiar_contraseña_usuario_apodaca,
+    obtener_todos_usuarios_apodaca,
+    obtener_usuario_por_correo_apodaca
 )
 from app.services.asistencia_service import (
     registrar_asistencia, 
@@ -307,3 +309,36 @@ async def cambiar_contraseña(datos: UsuarioCambiarContraseña):
     except Exception as e:
         print(f"Error al cambiar contraseña: {e}")
         raise HTTPException(status_code=500, detail=f"Error al cambiar contraseña: {str(e)}")
+
+@router.get("/api/usuarios/apodaca", tags=["usuarios_apodaca"])
+async def obtener_todos_usuarios():
+    """
+    Obtiene todos los usuarios de la base de datos usuarios_edec, colección usuarios_apodaca.
+    Retorna todos los datos excepto las contraseñas.
+    """
+    try:
+        usuarios = obtener_todos_usuarios_apodaca()
+        return {
+            "total": len(usuarios),
+            "usuarios": usuarios
+        }
+    except Exception as e:
+        print(f"Error al obtener usuarios: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener usuarios: {str(e)}")
+
+@router.get("/api/usuarios/apodaca/{correo}", tags=["usuarios_apodaca"])
+async def obtener_usuario_por_correo(correo: str):
+    """
+    Obtiene un usuario específico por su correo electrónico.
+    Retorna todos los datos del usuario excepto la contraseña.
+    """
+    try:
+        usuario = obtener_usuario_por_correo_apodaca(correo)
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        return usuario
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error al obtener usuario: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener usuario: {str(e)}")

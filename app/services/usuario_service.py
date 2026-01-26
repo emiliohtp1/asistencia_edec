@@ -338,3 +338,39 @@ def cambiar_contraseña_usuario_apodaca(datos: UsuarioCambiarContraseña) -> Dic
         "mensaje": "Contraseña actualizada exitosamente",
         "correo": datos.correo
     }
+
+def obtener_todos_usuarios_apodaca() -> List[Dict]:
+    """
+    Obtiene todos los usuarios de la base de datos usuarios_edec, colección usuarios_apodaca.
+    Retorna todos los datos excepto la contraseña.
+    """
+    db = get_db_usuarios()
+    coleccion = db.usuarios_apodaca
+    
+    usuarios = list(coleccion.find().sort("fecha_creacion", -1))
+    
+    # Convertir ObjectId a string y eliminar contraseñas
+    for usuario in usuarios:
+        usuario["_id"] = str(usuario["_id"])
+        usuario.pop("contraseña", None)
+    
+    return usuarios
+
+def obtener_usuario_por_correo_apodaca(correo: str) -> Optional[Dict]:
+    """
+    Obtiene un usuario por su correo de la base de datos usuarios_edec.
+    Retorna todos los datos excepto la contraseña.
+    """
+    db = get_db_usuarios()
+    coleccion = db.usuarios_apodaca
+    
+    usuario = coleccion.find_one({"correo": correo})
+    
+    if not usuario:
+        return None
+    
+    # Convertir ObjectId a string y eliminar contraseña
+    usuario["_id"] = str(usuario["_id"])
+    usuario.pop("contraseña", None)
+    
+    return usuario
