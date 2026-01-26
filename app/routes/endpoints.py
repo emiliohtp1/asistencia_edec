@@ -268,11 +268,11 @@ async def crear_usuario(usuario: UsuarioCreate):
 async def login_usuario_apodaca(datos: UsuarioLogin):
     """
     Autentica un usuario en la base de datos usuarios_edec, colección usuarios_apodaca.
-    Verifica el nombre de usuario y contraseña (hasheada).
+    Verifica el correo y contraseña (hasheada).
     """
     try:
         usuario = autenticar_usuario_apodaca(
-            datos.nombre_usuario,
+            datos.correo,
             datos.contraseña
         )
 

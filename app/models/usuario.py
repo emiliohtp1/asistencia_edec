@@ -46,23 +46,23 @@ class usuario_datos(BaseModel):
 # Modelos para usuarios de Apodaca
 class UsuarioCreate(BaseModel):
     nombre_completo: str
-    nombre_usuario: str
+    correo: str
     contraseña: str
     rol: str
     campus: str
 
 class UsuarioLogin(BaseModel):
-    nombre_usuario: str
+    correo: str
     contraseña: str
 
 class UsuarioResponseApodaca(BaseModel):
     nombre_completo: str
-    nombre_usuario: str
+    correo: str
     rol: str
     campus: str
     fecha_creacion: datetime
 
 class UsuarioCambiarContraseña(BaseModel):
-    nombre_usuario: str
+    correo: str
     contraseña_actual: str
     nueva_contraseña: str

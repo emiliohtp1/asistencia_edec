@@ -236,10 +236,10 @@ def crear_usuario_apodaca(usuario: UsuarioCreate) -> Dict:
     db = get_db_usuarios()
     coleccion = db.usuarios_apodaca
     
-    # Verificar si el nombre de usuario ya existe
-    usuario_existente = coleccion.find_one({"nombre_usuario": usuario.nombre_usuario})
+    # Verificar si el correo ya existe
+    usuario_existente = coleccion.find_one({"correo": usuario.correo})
     if usuario_existente:
-        raise ValueError(f"El nombre de usuario '{usuario.nombre_usuario}' ya está en uso")
+        raise ValueError(f"El correo '{usuario.correo}' ya está en uso")
     
     # Hashear la contraseña
     contraseña_hasheada = bcrypt.hashpw(
@@ -250,7 +250,7 @@ def crear_usuario_apodaca(usuario: UsuarioCreate) -> Dict:
     # Crear el documento del usuario
     nuevo_usuario = {
         "nombre_completo": usuario.nombre_completo,
-        "nombre_usuario": usuario.nombre_usuario,
+        "correo": usuario.correo,
         "contraseña": contraseña_hasheada,
         "rol": usuario.rol,
         "campus": usuario.campus,
@@ -266,16 +266,16 @@ def crear_usuario_apodaca(usuario: UsuarioCreate) -> Dict:
     
     return nuevo_usuario
 
-def autenticar_usuario_apodaca(nombre_usuario: str, contraseña: str) -> Optional[UsuarioResponseApodaca]:
+def autenticar_usuario_apodaca(correo: str, contraseña: str) -> Optional[UsuarioResponseApodaca]:
     """
-    Autentica un usuario verificando el nombre de usuario y contraseña.
+    Autentica un usuario verificando el correo y contraseña.
     Retorna los datos del usuario si las credenciales son correctas, None en caso contrario.
     """
     db = get_db_usuarios()
     coleccion = db.usuarios_apodaca
     
-    # Buscar el usuario por nombre de usuario
-    usuario = coleccion.find_one({"nombre_usuario": nombre_usuario})
+    # Buscar el usuario por correo
+    usuario = coleccion.find_one({"correo": correo})
     
     if not usuario:
         return None
@@ -291,7 +291,7 @@ def autenticar_usuario_apodaca(nombre_usuario: str, contraseña: str) -> Optiona
     # Retornar los datos del usuario (sin la contraseña)
     return UsuarioResponseApodaca(
         nombre_completo=usuario.get("nombre_completo", ""),
-        nombre_usuario=usuario.get("nombre_usuario", ""),
+        correo=usuario.get("correo", ""),
         rol=usuario.get("rol", ""),
         campus=usuario.get("campus", ""),
         fecha_creacion=usuario.get("fecha_creacion", datetime.now())
@@ -305,8 +305,8 @@ def cambiar_contraseña_usuario_apodaca(datos: UsuarioCambiarContraseña) -> Dic
     db = get_db_usuarios()
     coleccion = db.usuarios_apodaca
     
-    # Buscar el usuario por nombre de usuario
-    usuario = coleccion.find_one({"nombre_usuario": datos.nombre_usuario})
+    # Buscar el usuario por correo
+    usuario = coleccion.find_one({"correo": datos.correo})
     
     if not usuario:
         raise ValueError("Usuario no encontrado")
@@ -327,7 +327,7 @@ def cambiar_contraseña_usuario_apodaca(datos: UsuarioCambiarContraseña) -> Dic
     
     # Actualizar la contraseña en la base de datos
     resultado = coleccion.update_one(
-        {"nombre_usuario": datos.nombre_usuario},
+        {"correo": datos.correo},
         {"$set": {"contraseña": nueva_contraseña_hasheada}}
     )
     
@@ -336,5 +336,5 @@ def cambiar_contraseña_usuario_apodaca(datos: UsuarioCambiarContraseña) -> Dic
     
     return {
         "mensaje": "Contraseña actualizada exitosamente",
-        "nombre_usuario": datos.nombre_usuario
+        "correo": datos.correo
     }

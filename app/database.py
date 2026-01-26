@@ -27,6 +27,11 @@ def close_db():
         print("❌ Desconectado de MongoDB")
 
 def get_db():
-    """Retorna la instancia de la base de datos"""
+    """Retorna la instancia de la base de datos principal"""
     return database.db
 
+def get_db_usuarios():
+    """Retorna la instancia de la base de datos de usuarios"""
+    if database.client is None:
+        connect_db()
+    return database.client["usuarios_edec"]
