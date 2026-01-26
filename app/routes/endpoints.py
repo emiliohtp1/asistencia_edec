@@ -18,7 +18,10 @@ from app.services.usuario_service import (
     obtener_datos_alumno_bachillerato,
     obtener_datos_alumno_universidad,
     obtener_todos_alumnos_bachillerato,
-    obtener_todos_alumnos_universidad
+    obtener_todos_alumnos_universidad,
+    crear_usuario_apodaca,
+    autenticar_usuario_apodaca,
+    cambiar_contraseña_usuario_apodaca
 )
 from app.services.asistencia_service import (
     registrar_asistencia, 
@@ -27,7 +30,7 @@ from app.services.asistencia_service import (
     obtener_todas_asistencias_apodaca,
     obtener_asistencias_apodaca_por_matricula,
 )
-from app.models.usuario import UsuarioResponse, LoginRequest, usuario_datos
+from app.models.usuario import UsuarioResponse, LoginRequest, usuario_datos, UsuarioCreate, UsuarioLogin, UsuarioResponseApodaca, UsuarioCambiarContraseña
 from app.models.asistencia import AsistenciaCreate
 
 # Router principal
@@ -238,3 +241,69 @@ async def login_usuario(datos: LoginRequest):
     except Exception as e:
         print(f"Error en el servidor al intentar login: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# ENDPOINTS PARA USUARIOS DE APODACA (Base de datos usuarios_edec)
+# ============================================================================
+
+@router.post("/api/usuarios/apodaca/crear", tags=["usuarios_apodaca"])
+async def crear_usuario(usuario: UsuarioCreate):
+    """
+    Crea un nuevo usuario en la base de datos usuarios_edec, colección usuarios_apodaca.
+    La contraseña se hashea automáticamente antes de guardarse.
+    """
+    try:
+        nuevo_usuario = crear_usuario_apodaca(usuario)
+        return {
+            "mensaje": "Usuario creado exitosamente",
+            "usuario": nuevo_usuario
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"Error al crear usuario: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al crear usuario: {str(e)}")
+
+@router.post("/api/usuarios/apodaca/login", tags=["usuarios_apodaca"])
+async def login_usuario_apodaca(datos: UsuarioLogin):
+    """
+    Autentica un usuario en la base de datos usuarios_edec, colección usuarios_apodaca.
+    Verifica el nombre de usuario y contraseña (hasheada).
+    """
+    try:
+        usuario = autenticar_usuario_apodaca(
+            datos.nombre_usuario,
+            datos.contraseña
+        )
+
+        if not usuario:
+            raise HTTPException(
+                status_code=401,
+                detail="Credenciales incorrectas"
+            )
+
+        return {
+            "mensaje": "Login exitoso",
+            "usuario": usuario
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error en el servidor al intentar login: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/api/usuarios/apodaca/cambiar-contraseña", tags=["usuarios_apodaca"])
+async def cambiar_contraseña(datos: UsuarioCambiarContraseña):
+    """
+    Cambia la contraseña de un usuario en la base de datos usuarios_edec.
+    Requiere validar la contraseña actual antes de cambiarla por la nueva.
+    """
+    try:
+        resultado = cambiar_contraseña_usuario_apodaca(datos)
+        return resultado
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"Error al cambiar contraseña: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al cambiar contraseña: {str(e)}")

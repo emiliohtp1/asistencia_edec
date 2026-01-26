@@ -7,10 +7,13 @@ Este módulo contiene las funciones que interactúan con MongoDB para:
 - Autenticar usuarios mediante credenciales
 - Obtener datos detallados de alumnos de bachillerato y universidad
   (incluye mapeo de campos de MongoDB con mayúscula inicial al modelo)
+- Crear y autenticar usuarios en la base de datos usuarios_edec
 """
-from app.database import get_db
-from app.models.usuario import UsuarioResponse, usuario_datos
+from app.database import get_db, get_db_usuarios
+from app.models.usuario import UsuarioResponse, usuario_datos, UsuarioCreate, UsuarioResponseApodaca, UsuarioCambiarContraseña
 from typing import List, Dict, Optional
+from datetime import datetime
+import bcrypt
 
 def obtener_usuario_por_matricula(matricula: str) -> UsuarioResponse:
     """
@@ -220,3 +223,118 @@ def obtener_todos_alumnos_universidad() -> List[usuario_datos]:
         alumnos.append(alumno)
     
     return alumnos
+
+# ============================================================================
+# FUNCIONES PARA USUARIOS DE APODACA (Base de datos usuarios_edec)
+# ============================================================================
+
+def crear_usuario_apodaca(usuario: UsuarioCreate) -> Dict:
+    """
+    Crea un nuevo usuario en la base de datos usuarios_edec, colección usuarios_apodaca.
+    Hashea la contraseña antes de guardarla.
+    """
+    db = get_db_usuarios()
+    coleccion = db.usuarios_apodaca
+    
+    # Verificar si el nombre de usuario ya existe
+    usuario_existente = coleccion.find_one({"nombre_usuario": usuario.nombre_usuario})
+    if usuario_existente:
+        raise ValueError(f"El nombre de usuario '{usuario.nombre_usuario}' ya está en uso")
+    
+    # Hashear la contraseña
+    contraseña_hasheada = bcrypt.hashpw(
+        usuario.contraseña.encode('utf-8'),
+        bcrypt.gensalt()
+    ).decode('utf-8')
+    
+    # Crear el documento del usuario
+    nuevo_usuario = {
+        "nombre_completo": usuario.nombre_completo,
+        "nombre_usuario": usuario.nombre_usuario,
+        "contraseña": contraseña_hasheada,
+        "rol": usuario.rol,
+        "campus": usuario.campus,
+        "fecha_creacion": datetime.now()
+    }
+    
+    # Insertar en la base de datos
+    resultado = coleccion.insert_one(nuevo_usuario)
+    
+    # Retornar el usuario creado (sin la contraseña)
+    nuevo_usuario["_id"] = str(resultado.inserted_id)
+    nuevo_usuario.pop("contraseña", None)
+    
+    return nuevo_usuario
+
+def autenticar_usuario_apodaca(nombre_usuario: str, contraseña: str) -> Optional[UsuarioResponseApodaca]:
+    """
+    Autentica un usuario verificando el nombre de usuario y contraseña.
+    Retorna los datos del usuario si las credenciales son correctas, None en caso contrario.
+    """
+    db = get_db_usuarios()
+    coleccion = db.usuarios_apodaca
+    
+    # Buscar el usuario por nombre de usuario
+    usuario = coleccion.find_one({"nombre_usuario": nombre_usuario})
+    
+    if not usuario:
+        return None
+    
+    # Verificar la contraseña
+    contraseña_hasheada = usuario.get("contraseña", "")
+    if not bcrypt.checkpw(
+        contraseña.encode('utf-8'),
+        contraseña_hasheada.encode('utf-8')
+    ):
+        return None
+    
+    # Retornar los datos del usuario (sin la contraseña)
+    return UsuarioResponseApodaca(
+        nombre_completo=usuario.get("nombre_completo", ""),
+        nombre_usuario=usuario.get("nombre_usuario", ""),
+        rol=usuario.get("rol", ""),
+        campus=usuario.get("campus", ""),
+        fecha_creacion=usuario.get("fecha_creacion", datetime.now())
+    )
+
+def cambiar_contraseña_usuario_apodaca(datos: UsuarioCambiarContraseña) -> Dict:
+    """
+    Cambia la contraseña de un usuario en la base de datos usuarios_edec.
+    Valida que la contraseña actual sea correcta antes de cambiarla.
+    """
+    db = get_db_usuarios()
+    coleccion = db.usuarios_apodaca
+    
+    # Buscar el usuario por nombre de usuario
+    usuario = coleccion.find_one({"nombre_usuario": datos.nombre_usuario})
+    
+    if not usuario:
+        raise ValueError("Usuario no encontrado")
+    
+    # Verificar que la contraseña actual sea correcta
+    contraseña_hasheada_actual = usuario.get("contraseña", "")
+    if not bcrypt.checkpw(
+        datos.contraseña_actual.encode('utf-8'),
+        contraseña_hasheada_actual.encode('utf-8')
+    ):
+        raise ValueError("La contraseña actual es incorrecta")
+    
+    # Hashear la nueva contraseña
+    nueva_contraseña_hasheada = bcrypt.hashpw(
+        datos.nueva_contraseña.encode('utf-8'),
+        bcrypt.gensalt()
+    ).decode('utf-8')
+    
+    # Actualizar la contraseña en la base de datos
+    resultado = coleccion.update_one(
+        {"nombre_usuario": datos.nombre_usuario},
+        {"$set": {"contraseña": nueva_contraseña_hasheada}}
+    )
+    
+    if resultado.modified_count == 0:
+        raise ValueError("No se pudo actualizar la contraseña")
+    
+    return {
+        "mensaje": "Contraseña actualizada exitosamente",
+        "nombre_usuario": datos.nombre_usuario
+    }

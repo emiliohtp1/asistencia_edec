@@ -7,9 +7,13 @@ Este módulo define los esquemas de validación (Pydantic) para:
 - LoginRequest: Datos de autenticación (username y password)
 - usuario_datos: Modelo completo con información detallada de alumnos
   (matrícula, nombre, coordinador, graduado, correo, campus, programa, ciclo, turno)
+- UsuarioCreate: Modelo para crear nuevos usuarios en usuarios_apodaca
+- UsuarioLogin: Modelo para autenticación de usuarios
+- UsuarioResponseApodaca: Respuesta con datos del usuario autenticado
 """
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
 
 class Usuario(BaseModel):
     matricula: str
@@ -38,3 +42,27 @@ class usuario_datos(BaseModel):
     programa: str
     ciclo: str
     turno: str
+
+# Modelos para usuarios de Apodaca
+class UsuarioCreate(BaseModel):
+    nombre_completo: str
+    nombre_usuario: str
+    contraseña: str
+    rol: str
+    campus: str
+
+class UsuarioLogin(BaseModel):
+    nombre_usuario: str
+    contraseña: str
+
+class UsuarioResponseApodaca(BaseModel):
+    nombre_completo: str
+    nombre_usuario: str
+    rol: str
+    campus: str
+    fecha_creacion: datetime
+
+class UsuarioCambiarContraseña(BaseModel):
+    nombre_usuario: str
+    contraseña_actual: str
+    nueva_contraseña: str
