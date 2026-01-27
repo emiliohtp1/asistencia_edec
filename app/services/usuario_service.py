@@ -374,3 +374,31 @@ def obtener_usuario_por_correo_apodaca(correo: str) -> Optional[Dict]:
     usuario.pop("contraseña", None)
     
     return usuario
+
+def eliminar_usuario_por_correo_apodaca(correo: str) -> Dict:
+    """
+    Elimina un usuario de la base de datos usuarios_edec por su correo.
+    Retorna información sobre el usuario eliminado.
+    """
+    db = get_db_usuarios()
+    coleccion = db.usuarios_apodaca
+    
+    # Verificar si el usuario existe
+    usuario = coleccion.find_one({"correo": correo})
+    if not usuario:
+        raise ValueError("Usuario no encontrado")
+    
+    # Eliminar el usuario
+    resultado = coleccion.delete_one({"correo": correo})
+    
+    if resultado.deleted_count == 0:
+        raise ValueError("No se pudo eliminar el usuario")
+    
+    # Retornar información del usuario eliminado (sin la contraseña)
+    usuario["_id"] = str(usuario["_id"])
+    usuario.pop("contraseña", None)
+    
+    return {
+        "mensaje": "Usuario eliminado exitosamente",
+        "usuario_eliminado": usuario
+    }

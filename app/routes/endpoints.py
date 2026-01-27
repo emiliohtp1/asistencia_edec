@@ -23,7 +23,8 @@ from app.services.usuario_service import (
     autenticar_usuario_apodaca,
     cambiar_contraseña_usuario_apodaca,
     obtener_todos_usuarios_apodaca,
-    obtener_usuario_por_correo_apodaca
+    obtener_usuario_por_correo_apodaca,
+    eliminar_usuario_por_correo_apodaca
 )
 from app.services.asistencia_service import (
     registrar_asistencia, 
@@ -342,3 +343,18 @@ async def obtener_usuario_por_correo(correo: str):
     except Exception as e:
         print(f"Error al obtener usuario: {e}")
         raise HTTPException(status_code=500, detail=f"Error al obtener usuario: {str(e)}")
+
+@router.delete("/api/usuarios/apodaca/{correo}", tags=["usuarios_apodaca"])
+async def eliminar_usuario(correo: str):
+    """
+    Elimina un usuario de la base de datos usuarios_edec por su correo electrónico.
+    Retorna información sobre el usuario eliminado.
+    """
+    try:
+        resultado = eliminar_usuario_por_correo_apodaca(correo)
+        return resultado
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        print(f"Error al eliminar usuario: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al eliminar usuario: {str(e)}")
