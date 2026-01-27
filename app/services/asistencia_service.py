@@ -139,3 +139,84 @@ def obtener_asistencias_apodaca_por_matricula(matricula: str) -> List[Dict]:
             registro["timestamp"] = registro["timestamp"].isoformat()
     
     return registros
+
+# ============================================================================
+# FUNCIONES PARA FICHADOS DE APODACA (Base de datos asistencia_edec)
+# ============================================================================
+
+def registrar_fichado_apodaca(fichado_data: dict) -> Dict:
+    """
+    Registra un fichado en la base de datos asistencia_edec, colección fichados_apodaca.
+    Agrega automáticamente la fecha_registro_ficha con fecha y hora actual.
+    """
+    db = get_db()
+    coleccion = db.fichados_apodaca
+    
+    # Obtener fecha y hora actual en horario de México
+    ahora_mexico = obtener_hora_mexico()
+    
+    # Crear el documento del fichado
+    fichado = {
+        "matricula": fichado_data["matricula"],
+        "nombre": fichado_data["nombre"],
+        "coordinador": fichado_data["coordinador"],
+        "graduado": fichado_data["graduado"],
+        "correo": fichado_data["correo"],
+        "campus": fichado_data["campus"],
+        "programa": fichado_data["programa"],
+        "ciclo": fichado_data["ciclo"],
+        "turno": fichado_data["turno"],
+        "fecha_registro_ficha": ahora_mexico
+    }
+    
+    # Insertar en la base de datos
+    resultado = coleccion.insert_one(fichado)
+    fichado["_id"] = str(resultado.inserted_id)
+    
+    # Convertir fecha_registro_ficha a ISO format
+    if isinstance(fichado.get("fecha_registro_ficha"), datetime):
+        fichado["fecha_registro_ficha"] = fichado["fecha_registro_ficha"].isoformat()
+    
+    return fichado
+
+def obtener_fichados_apodaca_agrupados() -> List[Dict]:
+    """
+    Obtiene todos los fichados de la colección fichados_apodaca.
+    Si existen varios objetos con el mismo nombre y matricula, muestra solo uno
+    con un campo cantidad_fichas que indica cuántas veces se repite.
+    """
+    db = get_db()
+    coleccion = db.fichados_apodaca
+    
+    # Obtener todos los fichados
+    fichados = list(coleccion.find().sort("fecha_registro_ficha", -1))
+    
+    # Agrupar por nombre y matricula
+    fichados_agrupados = {}
+    
+    for fichado in fichados:
+        clave = f"{fichado.get('nombre', '')}_{fichado.get('matricula', '')}"
+        
+        if clave not in fichados_agrupados:
+            # Primera vez que vemos esta combinación, guardar el fichado
+            fichado_agrupado = {
+                "matricula": fichado.get("matricula", ""),
+                "nombre": fichado.get("nombre", ""),
+                "coordinador": fichado.get("coordinador", ""),
+                "graduado": fichado.get("graduado", ""),
+                "correo": fichado.get("correo", ""),
+                "campus": fichado.get("campus", ""),
+                "programa": fichado.get("programa", ""),
+                "ciclo": fichado.get("ciclo", ""),
+                "turno": fichado.get("turno", ""),
+                "cantidad_fichas": 1
+            }
+            fichados_agrupados[clave] = fichado_agrupado
+        else:
+            # Ya existe, incrementar contador
+            fichados_agrupados[clave]["cantidad_fichas"] += 1
+    
+    # Convertir el diccionario a lista
+    resultado = list(fichados_agrupados.values())
+    
+    return resultado

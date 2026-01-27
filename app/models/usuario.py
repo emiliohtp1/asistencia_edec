@@ -66,3 +66,15 @@ class UsuarioCambiarContraseña(BaseModel):
     correo: str
     contraseña_actual: str
     nueva_contraseña: str
+
+# Modelos para fichados de Apodaca
+class FichadoCreate(BaseModel):
+    matricula: str
+    nombre: str
+    coordinador: str
+    graduado: str
+    correo: str
+    campus: str
+    programa: str
+    ciclo: str
+    turno: str

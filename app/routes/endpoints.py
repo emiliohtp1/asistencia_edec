@@ -32,8 +32,10 @@ from app.services.asistencia_service import (
     obtener_asistencias_por_matricula,
     obtener_todas_asistencias_apodaca,
     obtener_asistencias_apodaca_por_matricula,
+    registrar_fichado_apodaca,
+    obtener_fichados_apodaca_agrupados
 )
-from app.models.usuario import UsuarioResponse, LoginRequest, usuario_datos, UsuarioCreate, UsuarioLogin, UsuarioResponseApodaca, UsuarioCambiarContraseña
+from app.models.usuario import UsuarioResponse, LoginRequest, usuario_datos, UsuarioCreate, UsuarioLogin, UsuarioResponseApodaca, UsuarioCambiarContraseña, FichadoCreate
 from app.models.asistencia import AsistenciaCreate
 
 # Router principal
@@ -358,3 +360,41 @@ async def eliminar_usuario(correo: str):
     except Exception as e:
         print(f"Error al eliminar usuario: {e}")
         raise HTTPException(status_code=500, detail=f"Error al eliminar usuario: {str(e)}")
+
+# ============================================================================
+# ENDPOINTS PARA FICHADOS DE APODACA (Base de datos asistencia_edec)
+# ============================================================================
+
+@router.post("/api/fichados/apodaca/registrar", tags=["fichados_apodaca"])
+async def registrar_fichado(fichado: FichadoCreate):
+    """
+    Registra un fichado en la base de datos asistencia_edec, colección fichados_apodaca.
+    Agrega automáticamente la fecha_registro_ficha con fecha y hora actual.
+    """
+    try:
+        fichado_dict = fichado.model_dump()
+        resultado = registrar_fichado_apodaca(fichado_dict)
+        return {
+            "mensaje": "Fichado registrado exitosamente",
+            "fichado": resultado
+        }
+    except Exception as e:
+        print(f"Error al registrar fichado: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al registrar fichado: {str(e)}")
+
+@router.get("/api/fichados/apodaca", tags=["fichados_apodaca"])
+async def obtener_fichados_agrupados():
+    """
+    Obtiene todos los fichados de la colección fichados_apodaca.
+    Si existen varios objetos con el mismo nombre y matricula, muestra solo uno
+    con un campo cantidad_fichas que indica cuántas veces se repite.
+    """
+    try:
+        fichados = obtener_fichados_apodaca_agrupados()
+        return {
+            "total": len(fichados),
+            "fichados": fichados
+        }
+    except Exception as e:
+        print(f"Error al obtener fichados: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener fichados: {str(e)}")
