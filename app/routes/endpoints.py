@@ -24,7 +24,11 @@ from app.services.usuario_service import (
     cambiar_contraseña_usuario_apodaca,
     obtener_todos_usuarios_apodaca,
     obtener_usuario_por_correo_apodaca,
-    eliminar_usuario_por_correo_apodaca
+    eliminar_usuario_por_correo_apodaca,
+    crear_alumno_bachillerato,
+    crear_alumno_universidad,
+    eliminar_alumno_bachillerato,
+    eliminar_alumno_universidad
 )
 from app.services.asistencia_service import (
     registrar_asistencia, 
@@ -398,3 +402,73 @@ async def obtener_fichados_agrupados():
     except Exception as e:
         print(f"Error al obtener fichados: {e}")
         raise HTTPException(status_code=500, detail=f"Error al obtener fichados: {str(e)}")
+
+# ============================================================================
+# ENDPOINTS PARA GESTIÓN DE ALUMNOS (Bachillerato y Universidad)
+# ============================================================================
+
+@router.post("/api/alumnos/bachillerato/crear", tags=["alumnos"])
+async def crear_alumno_bachillerato_endpoint(alumno: usuario_datos):
+    """
+    Crea un nuevo alumno en la colección 'alumnos_bachillerato_apodaca'.
+    Requiere todos los campos del modelo de alumno.
+    """
+    try:
+        nuevo_alumno = crear_alumno_bachillerato(alumno)
+        return {
+            "mensaje": "Alumno creado exitosamente en bachillerato",
+            "alumno": nuevo_alumno
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"Error al crear alumno en bachillerato: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al crear alumno: {str(e)}")
+
+@router.post("/api/alumnos/universidad/crear", tags=["alumnos"])
+async def crear_alumno_universidad_endpoint(alumno: usuario_datos):
+    """
+    Crea un nuevo alumno en la colección 'alumnos_universidad_apodaca'.
+    Requiere todos los campos del modelo de alumno.
+    """
+    try:
+        nuevo_alumno = crear_alumno_universidad(alumno)
+        return {
+            "mensaje": "Alumno creado exitosamente en universidad",
+            "alumno": nuevo_alumno
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"Error al crear alumno en universidad: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al crear alumno: {str(e)}")
+
+@router.delete("/api/alumnos/bachillerato/{matricula}", tags=["alumnos"])
+async def eliminar_alumno_bachillerato_endpoint(matricula: str):
+    """
+    Elimina un alumno de la colección 'alumnos_bachillerato_apodaca' por su matrícula.
+    Retorna información sobre el alumno eliminado.
+    """
+    try:
+        resultado = eliminar_alumno_bachillerato(matricula)
+        return resultado
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        print(f"Error al eliminar alumno de bachillerato: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al eliminar alumno: {str(e)}")
+
+@router.delete("/api/alumnos/universidad/{matricula}", tags=["alumnos"])
+async def eliminar_alumno_universidad_endpoint(matricula: str):
+    """
+    Elimina un alumno de la colección 'alumnos_universidad_apodaca' por su matrícula.
+    Retorna información sobre el alumno eliminado.
+    """
+    try:
+        resultado = eliminar_alumno_universidad(matricula)
+        return resultado
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        print(f"Error al eliminar alumno de universidad: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al eliminar alumno: {str(e)}")

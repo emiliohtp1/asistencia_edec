@@ -402,3 +402,143 @@ def eliminar_usuario_por_correo_apodaca(correo: str) -> Dict:
         "mensaje": "Usuario eliminado exitosamente",
         "usuario_eliminado": usuario
     }
+
+# ============================================================================
+# FUNCIONES PARA GESTIÓN DE ALUMNOS (Bachillerato y Universidad)
+# ============================================================================
+
+def crear_alumno_bachillerato(alumno: usuario_datos) -> Dict:
+    """
+    Crea un nuevo alumno en la colección 'alumnos_bachillerato_apodaca'.
+    Los campos se guardan con mayúscula inicial para mantener consistencia con MongoDB.
+    """
+    db = get_db()
+    coleccion = db.alumnos_bachillerato_apodaca
+    
+    # Verificar si la matrícula ya existe
+    matricula_existente = coleccion.find_one({"Matricula": alumno.matricula})
+    if matricula_existente:
+        raise ValueError(f"La matrícula '{alumno.matricula}' ya existe en bachillerato")
+    
+    # Crear el documento del alumno con campos en mayúscula (formato MongoDB)
+    nuevo_alumno = {
+        "Matricula": alumno.matricula,
+        "Nombre": alumno.nombre,
+        "Coordinador": alumno.coordinador,
+        "Graduado": alumno.graduado,
+        "Correo": alumno.correo,
+        "Campus": alumno.campus,
+        "Programa": alumno.programa,
+        "Ciclo": alumno.ciclo,
+        "Turno": alumno.turno
+    }
+    
+    # Insertar en la base de datos
+    resultado = coleccion.insert_one(nuevo_alumno)
+    
+    # Retornar el alumno creado
+    nuevo_alumno["_id"] = str(resultado.inserted_id)
+    
+    return nuevo_alumno
+
+def crear_alumno_universidad(alumno: usuario_datos) -> Dict:
+    """
+    Crea un nuevo alumno en la colección 'alumnos_universidad_apodaca'.
+    Los campos se guardan con mayúscula inicial para mantener consistencia con MongoDB.
+    """
+    db = get_db()
+    coleccion = db.alumnos_universidad_apodaca
+    
+    # Verificar si la matrícula ya existe
+    matricula_existente = coleccion.find_one({"Matricula": alumno.matricula})
+    if matricula_existente:
+        raise ValueError(f"La matrícula '{alumno.matricula}' ya existe en universidad")
+    
+    # Crear el documento del alumno con campos en mayúscula (formato MongoDB)
+    nuevo_alumno = {
+        "Matricula": alumno.matricula,
+        "Nombre": alumno.nombre,
+        "Coordinador": alumno.coordinador,
+        "Graduado": alumno.graduado,
+        "Correo": alumno.correo,
+        "Campus": alumno.campus,
+        "Programa": alumno.programa,
+        "Ciclo": alumno.ciclo,
+        "Turno": alumno.turno
+    }
+    
+    # Insertar en la base de datos
+    resultado = coleccion.insert_one(nuevo_alumno)
+    
+    # Retornar el alumno creado
+    nuevo_alumno["_id"] = str(resultado.inserted_id)
+    
+    return nuevo_alumno
+
+def eliminar_alumno_bachillerato(matricula: str) -> Dict:
+    """
+    Elimina un alumno de la colección 'alumnos_bachillerato_apodaca' por su matrícula.
+    Retorna información sobre el alumno eliminado.
+    """
+    db = get_db()
+    coleccion = db.alumnos_bachillerato_apodaca
+    
+    # Buscar el alumno por matrícula (intentar como string e int)
+    alumno = coleccion.find_one({"Matricula": matricula})
+    if not alumno:
+        try:
+            matricula_int = int(matricula)
+            alumno = coleccion.find_one({"Matricula": matricula_int})
+        except (ValueError, TypeError):
+            pass
+    
+    if not alumno:
+        raise ValueError("Alumno no encontrado en bachillerato")
+    
+    # Eliminar el alumno
+    resultado = coleccion.delete_one({"Matricula": alumno.get("Matricula")})
+    
+    if resultado.deleted_count == 0:
+        raise ValueError("No se pudo eliminar el alumno")
+    
+    # Retornar información del alumno eliminado
+    alumno["_id"] = str(alumno["_id"])
+    
+    return {
+        "mensaje": "Alumno eliminado exitosamente de bachillerato",
+        "alumno_eliminado": alumno
+    }
+
+def eliminar_alumno_universidad(matricula: str) -> Dict:
+    """
+    Elimina un alumno de la colección 'alumnos_universidad_apodaca' por su matrícula.
+    Retorna información sobre el alumno eliminado.
+    """
+    db = get_db()
+    coleccion = db.alumnos_universidad_apodaca
+    
+    # Buscar el alumno por matrícula (intentar como string e int)
+    alumno = coleccion.find_one({"Matricula": matricula})
+    if not alumno:
+        try:
+            matricula_int = int(matricula)
+            alumno = coleccion.find_one({"Matricula": matricula_int})
+        except (ValueError, TypeError):
+            pass
+    
+    if not alumno:
+        raise ValueError("Alumno no encontrado en universidad")
+    
+    # Eliminar el alumno
+    resultado = coleccion.delete_one({"Matricula": alumno.get("Matricula")})
+    
+    if resultado.deleted_count == 0:
+        raise ValueError("No se pudo eliminar el alumno")
+    
+    # Retornar información del alumno eliminado
+    alumno["_id"] = str(alumno["_id"])
+    
+    return {
+        "mensaje": "Alumno eliminado exitosamente de universidad",
+        "alumno_eliminado": alumno
+    }
