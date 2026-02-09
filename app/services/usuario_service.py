@@ -254,7 +254,8 @@ def crear_usuario_apodaca(usuario: UsuarioCreate) -> Dict:
         "contraseña": contraseña_hasheada,
         "rol": usuario.rol,
         "campus": usuario.campus,
-        "fecha_creacion": datetime.now()
+        "fecha_creacion": datetime.now(),
+        "autorizado": False  # Por defecto, los nuevos usuarios no están autorizados
     }
     
     # Insertar en la base de datos
@@ -294,7 +295,8 @@ def autenticar_usuario_apodaca(correo: str, contraseña: str) -> Optional[Usuari
         correo=usuario.get("correo", ""),
         rol=usuario.get("rol", ""),
         campus=usuario.get("campus", ""),
-        fecha_creacion=usuario.get("fecha_creacion", datetime.now())
+        fecha_creacion=usuario.get("fecha_creacion", datetime.now()),
+        autorizado=usuario.get("autorizado", False)  # Por defecto False si no existe
     )
 
 def cambiar_contraseña_usuario_apodaca(datos: UsuarioCambiarContraseña) -> Dict:
@@ -353,6 +355,9 @@ def obtener_todos_usuarios_apodaca() -> List[Dict]:
     for usuario in usuarios:
         usuario["_id"] = str(usuario["_id"])
         usuario.pop("contraseña", None)
+        # Asegurar que el campo autorizado exista (por defecto False para usuarios antiguos)
+        if "autorizado" not in usuario:
+            usuario["autorizado"] = False
     
     return usuarios
 
@@ -372,6 +377,9 @@ def obtener_usuario_por_correo_apodaca(correo: str) -> Optional[Dict]:
     # Convertir ObjectId a string y eliminar contraseña
     usuario["_id"] = str(usuario["_id"])
     usuario.pop("contraseña", None)
+    # Asegurar que el campo autorizado exista (por defecto False para usuarios antiguos)
+    if "autorizado" not in usuario:
+        usuario["autorizado"] = False
     
     return usuario
 
@@ -397,6 +405,9 @@ def eliminar_usuario_por_correo_apodaca(correo: str) -> Dict:
     # Retornar información del usuario eliminado (sin la contraseña)
     usuario["_id"] = str(usuario["_id"])
     usuario.pop("contraseña", None)
+    # Asegurar que el campo autorizado exista (por defecto False para usuarios antiguos)
+    if "autorizado" not in usuario:
+        usuario["autorizado"] = False
     
     return {
         "mensaje": "Usuario eliminado exitosamente",

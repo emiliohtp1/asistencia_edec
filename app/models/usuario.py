@@ -61,6 +61,7 @@ class UsuarioResponseApodaca(BaseModel):
     rol: str
     campus: str
     fecha_creacion: datetime
+    autorizado: bool
 
 class UsuarioCambiarContraseña(BaseModel):
     correo: str
