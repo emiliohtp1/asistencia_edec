@@ -1,0 +1,932 @@
+================================================================================
+                    MANUAL DEL SISTEMA DE ASISTENCIA EDEC
+                         Documentación Técnica Completa
+================================================================================
+
+ÍNDICE:
+1. Estructura del Proyecto
+2. Archivos Principales
+3. Archivos de Configuración
+4. Archivos de Modelos
+5. Archivos de Servicios
+6. Archivos de Rutas/Endpoints
+7. Scripts y Utilidades
+8. Dependencias y Librerías
+9. Detalles Técnicos Importantes
+
+================================================================================
+1. ESTRUCTURA DEL PROYECTO
+================================================================================
+
+El proyecto sigue una arquitectura en capas (Layered Architecture):
+
+backend/
+├── app/                    # Módulo principal de la aplicación
+│   ├── __init__.py        # Inicialización del módulo
+│   ├── main.py            # Punto de entrada de la aplicación FastAPI
+│   ├── config.py          # Configuración mediante variables de entorno
+│   ├── database.py        # Gestión de conexión a MongoDB
+│   ├── models/            # Modelos de datos (Pydantic)
+│   │   ├── usuario.py     # Modelos relacionados con usuarios
+│   │   └── asistencia.py  # Modelos relacionados con asistencias
+│   ├── routes/            # Definición de endpoints HTTP
+│   │   └── endpoints.py   # Todos los endpoints de la API
+│   └── services/          # Lógica de negocio
+│       ├── usuario_service.py    # Operaciones con usuarios
+│       └── asistencia_service.py # Operaciones con asistencias
+├── scripts/               # Scripts de utilidad
+│   └── init_database.py   # Script para inicializar BD con datos de ejemplo
+├── requirements.txt       # Dependencias del proyecto
+├── start.bat             # Script de inicio para Windows
+└── start.sh              # Script de inicio para Linux/Mac
+
+================================================================================
+2. ARCHIVOS PRINCIPALES
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📄 app/main.py
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DESCRIPCIÓN:
+Punto de entrada principal de la aplicación FastAPI. Configura la aplicación,
+middleware CORS, eventos de inicio/cierre y el router principal.
+
+FUNCIONALIDAD:
+- Crea la instancia de FastAPI con metadatos (título, descripción, versión)
+- Configura CORS para permitir peticiones desde el frontend
+- Registra el router con todos los endpoints
+- Maneja eventos de startup (conexión a BD) y shutdown (desconexión)
+- Define endpoint raíz "/" con información básica de la API
+
+DETALLES TÉCNICOS:
+- Framework: FastAPI
+- Middleware: CORSMiddleware para permitir peticiones cross-origin
+- Orígenes permitidos:
+  * https://asistencia-edecfront.onrender.com (producción)
+  * http://localhost:5500 (desarrollo local)
+  * http://127.0.0.1:5500 (desarrollo local alternativo)
+- Eventos: @app.on_event("startup") y @app.on_event("shutdown")
+- Servidor: Uvicorn (ASGI server)
+
+PUNTOS IMPORTANTES:
+✓ CORS configurado para desarrollo y producción
+✓ Conexión a BD se establece al iniciar la aplicación
+✓ Cierre limpio de conexiones al detener la aplicación
+✓ Crea directorio de reportes Excel si no existe
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📄 app/config.py
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DESCRIPCIÓN:
+Módulo de configuración que carga variables de entorno desde archivo .env
+y las expone mediante una clase Config.
+
+FUNCIONALIDAD:
+- Carga variables de entorno usando python-dotenv
+- Define valores por defecto para desarrollo local
+- Centraliza toda la configuración de la aplicación
+
+VARIABLES DE CONFIGURACIÓN:
+- MONGODB_URI: URI de conexión a MongoDB
+  * Default: "mongodb://localhost:27017/"
+  * Producción: Se obtiene de Render.com o variable de entorno
+  
+- DATABASE_NAME: Nombre de la base de datos
+  * Default: "asistencia_edec"
+  
+- HOST: Dirección IP del servidor
+  * Default: "0.0.0.0" (acepta conexiones de cualquier IP)
+  
+- PORT: Puerto del servidor
+  * Default: 8000
+  * Render.com proporciona PORT automáticamente
+  
+- EXCEL_DIR: Directorio para almacenar reportes Excel
+  * Default: "./excel_reports"
+
+DETALLES TÉCNICOS:
+- Librería: python-dotenv (load_dotenv())
+- Patrón: Singleton (clase Config con atributos de clase)
+- Fallbacks: Todos los valores tienen defaults para desarrollo local
+
+PUNTOS IMPORTANTES:
+✓ Configuración flexible para desarrollo y producción
+✓ Valores por defecto permiten ejecución sin .env
+✓ Compatible con Render.com y otros servicios cloud
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📄 app/database.py
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DESCRIPCIÓN:
+Módulo que gestiona la conexión a MongoDB usando PyMongo. Implementa un
+patrón singleton para reutilizar la misma conexión en toda la aplicación.
+
+FUNCIONALIDAD:
+- Establece conexión a MongoDB al iniciar
+- Cierra conexión al terminar la aplicación
+- Proporciona acceso a la base de datos principal y secundaria
+
+CLASES Y FUNCIONES:
+- Database: Clase singleton que almacena el cliente y la BD
+- connect_db(): Establece conexión usando MONGODB_URI de Config
+- close_db(): Cierra la conexión de forma segura
+- get_db(): Retorna instancia de la BD principal (asistencia_edec)
+- get_db_usuarios(): Retorna instancia de la BD de usuarios (usuarios_edec)
+
+DETALLES TÉCNICOS:
+- Librería: PyMongo (MongoClient)
+- Patrón: Singleton para evitar múltiples conexiones
+- Bases de datos:
+  * asistencia_edec: BD principal (asistencias, alumnos, maestros)
+  * usuarios_edec: BD de usuarios del sistema (usuarios_apodaca)
+
+PUNTOS IMPORTANTES:
+✓ Una sola conexión reutilizada (eficiente)
+✓ Manejo de dos bases de datos diferentes
+✓ Mensajes de confirmación al conectar/desconectar
+✓ Conexión lazy (se conecta cuando se necesita)
+
+================================================================================
+3. ARCHIVOS DE MODELOS (Pydantic)
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📄 app/models/usuario.py
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DESCRIPCIÓN:
+Define todos los modelos Pydantic para validación y serialización de datos
+relacionados con usuarios (alumnos, maestros, usuarios del sistema).
+
+MODELOS DEFINIDOS:
+
+1. Usuario (BaseModel)
+   - matricula: str
+   - nombre_completo: str
+   - carrera: str
+   - tipo: str ("alumno" o "maestro")
+   Uso: Modelo base para usuarios del sistema antiguo
+
+2. UsuarioResponse (BaseModel)
+   - matricula: str
+   - nombre_completo: str
+   - carrera: str
+   - tipo: str
+   - encontrado: bool
+   Uso: Respuesta al buscar un usuario por matrícula
+
+3. LoginRequest (BaseModel)
+   - username: str
+   - password: str
+   Uso: Datos de autenticación para login antiguo
+
+4. usuario_datos (BaseModel)
+   - matricula: str
+   - nombre: str
+   - coordinador: str
+   - graduado: str
+   - correo: str
+   - campus: str
+   - programa: str
+   - ciclo: str
+   - turno: str
+   Uso: Datos completos de alumnos de bachillerato/universidad
+
+5. UsuarioCreate (BaseModel)
+   - nombre_completo: str
+   - correo: str
+   - contraseña: str
+   - rol: str
+   - campus: str
+   Uso: Crear nuevos usuarios en usuarios_apodaca
+
+6. UsuarioLogin (BaseModel)
+   - correo: str
+   - contraseña: str
+   Uso: Autenticación de usuarios de Apodaca
+
+7. UsuarioResponseApodaca (BaseModel)
+   - nombre_completo: str
+   - correo: str
+   - rol: str
+   - campus: str
+   - fecha_creacion: datetime
+   - autorizado: bool
+   Uso: Respuesta con datos del usuario autenticado
+
+8. UsuarioCambiarContraseña (BaseModel)
+   - correo: str
+   - contraseña_actual: str
+   - nueva_contraseña: str
+   Uso: Cambiar contraseña de usuario
+
+9. UsuarioCambiarAutorizado (BaseModel)
+   - correo: str
+   - autorizado: bool
+   Uso: Cambiar estado de autorización de usuario
+
+10. FichadoCreate (BaseModel)
+    - matricula: str
+    - nombre: str
+    - coordinador: str
+    - graduado: str
+    - correo: str
+    - campus: str
+    - programa: str
+    - ciclo: str
+    - turno: str
+    Uso: Crear fichados de alumnos
+
+DETALLES TÉCNICOS:
+- Framework: Pydantic v2.5.0+
+- Validación automática de tipos
+- Serialización JSON automática
+- Documentación automática en Swagger/OpenAPI
+
+PUNTOS IMPORTANTES:
+✓ Validación automática de datos de entrada
+✓ Serialización automática de respuestas
+✓ Documentación automática en Swagger UI
+✓ Campo "autorizado" agregado recientemente para control de acceso
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📄 app/models/asistencia.py
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DESCRIPCIÓN:
+Define modelos Pydantic para operaciones relacionadas con asistencias.
+
+MODELOS DEFINIDOS:
+
+1. AsistenciaCreate (BaseModel)
+   - matricula: str
+   Uso: Crear un registro de asistencia
+
+2. Asistencia (BaseModel)
+   - matricula: str
+   - fecha: str (Formato: DD/MM/YYYY)
+   - hora: str (Formato: HH:MM)
+   - timestamp: datetime
+   Uso: Modelo de respuesta para registros de asistencia
+
+DETALLES TÉCNICOS:
+- Validación de formato de fecha y hora
+- Timestamp para ordenamiento y consultas
+
+================================================================================
+4. ARCHIVOS DE SERVICIOS (Lógica de Negocio)
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📄 app/services/usuario_service.py
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DESCRIPCIÓN:
+Contiene toda la lógica de negocio para operaciones con usuarios. Interactúa
+directamente con MongoDB y maneja la transformación de datos entre modelos
+Pydantic y documentos MongoDB.
+
+FUNCIONES PRINCIPALES:
+
+1. obtener_usuario_por_matricula(matricula: str)
+   - Busca en colecciones 'alumnos' y 'maestros'
+   - Retorna UsuarioResponse con encontrado: bool
+   - BD: asistencia_edec
+
+2. obtener_todos_alumnos() / obtener_todos_maestros()
+   - Lista todos los alumnos/maestros
+   - Ordena por matrícula
+   - Convierte ObjectId a string
+
+3. obtener_datos_alumno_bachillerato(matricula: str)
+   - Busca en 'alumnos_bachillerato_apodaca'
+   - Mapea campos MongoDB (mayúscula) a modelo (minúscula)
+   - Maneja matrícula como string e int
+   - Retorna usuario_datos
+
+4. obtener_datos_alumno_universidad(matricula: str)
+   - Similar a bachillerato pero en 'alumnos_universidad_apodaca'
+
+5. crear_usuario_apodaca(usuario: UsuarioCreate)
+   - Crea usuario en 'usuarios_apodaca' (BD: usuarios_edec)
+   - Hashea contraseña con bcrypt
+   - Valida correo único
+   - Establece autorizado: False por defecto
+   - Retorna usuario sin contraseña
+
+6. autenticar_usuario_apodaca(correo: str, contraseña: str)
+   - Verifica credenciales
+   - Compara contraseña hasheada con bcrypt
+   - Retorna UsuarioResponseApodaca o None
+
+7. cambiar_contraseña_usuario_apodaca(datos: UsuarioCambiarContraseña)
+   - Valida contraseña actual
+   - Hashea nueva contraseña
+   - Actualiza en BD
+
+8. cambiar_autorizado_usuario_apodaca(datos: UsuarioCambiarAutorizado)
+   - Actualiza campo 'autorizado' de usuario
+   - Retorna usuario actualizado
+
+9. obtener_todos_usuarios_apodaca()
+   - Lista todos los usuarios
+   - Elimina contraseñas de respuesta
+   - Asegura campo 'autorizado' existe (default: False)
+
+10. obtener_usuario_por_correo_apodaca(correo: str)
+    - Busca usuario por correo
+    - Retorna usuario sin contraseña
+
+11. eliminar_usuario_por_correo_apodaca(correo: str)
+    - Elimina usuario por correo
+    - Retorna información del usuario eliminado
+
+12. crear_alumno_bachillerato(alumno: usuario_datos)
+    - Crea alumno en 'alumnos_bachillerato_apodaca'
+    - Valida matrícula única
+    - Mapea campos a mayúscula (formato MongoDB)
+
+13. crear_alumno_universidad(alumno: usuario_datos)
+    - Similar a bachillerato pero en 'alumnos_universidad_apodaca'
+
+14. eliminar_alumno_bachillerato(matricula: str)
+    - Elimina alumno de bachillerato
+    - Maneja matrícula como string e int
+
+15. eliminar_alumno_universidad(matricula: str)
+    - Elimina alumno de universidad
+
+DETALLES TÉCNICOS:
+- Librerías: bcrypt (hash de contraseñas), pymongo (MongoDB)
+- Hashing: bcrypt con salt automático
+- Mapeo: Campos MongoDB en mayúscula → Modelos en minúscula
+- Validaciones: Correo único, matrícula única
+- Seguridad: Contraseñas nunca se retornan en respuestas
+
+PUNTOS IMPORTANTES:
+✓ Separación de lógica de negocio de rutas HTTP
+✓ Manejo robusto de tipos (string/int para matrículas)
+✓ Seguridad: contraseñas hasheadas con bcrypt
+✓ Campo 'autorizado' con valor por defecto para usuarios antiguos
+✓ Dos bases de datos: asistencia_edec y usuarios_edec
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📄 app/services/asistencia_service.py
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DESCRIPCIÓN:
+Contiene la lógica de negocio para operaciones con asistencias y fichados.
+Maneja zona horaria de México y validaciones de registros únicos por día.
+
+FUNCIONES PRINCIPALES:
+
+1. obtener_hora_mexico()
+   - Retorna datetime actual en zona horaria de México (America/Mexico_City)
+   - Usa pytz para manejo de zonas horarias
+   - Formato: datetime con timezone
+
+2. registrar_asistencia(matricula: str, nombre: str)
+   - Registra asistencia en 'asistencia_general_apodaca'
+   - Valida: Solo un registro por matrícula por día
+   - Guarda: Matricula, Nombre, Fecha (DD/MM/YYYY), Hora (HH:MM)
+   - Incluye timestamp para ordenamiento
+   - Lanza ValueError si ya existe registro del día
+
+3. obtener_todas_asistencias()
+   - Lista todas las asistencias de 'asistencia_general'
+   - Ordena por timestamp descendente (más recientes primero)
+   - Convierte ObjectId y timestamp a formatos serializables
+
+4. obtener_asistencias_por_matricula(matricula: str)
+   - Filtra asistencias por matrícula
+   - Colección: 'asistencia_general'
+
+5. obtener_todas_asistencias_apodaca()
+   - Similar a obtener_todas_asistencias pero en 'asistencia_general_apodaca'
+
+6. obtener_asistencias_apodaca_por_matricula(matricula: str)
+   - Busca por 'Matricula' (mayúscula)
+   - Intenta como string e int
+   - Colección: 'asistencia_general_apodaca'
+
+7. registrar_fichado_apodaca(fichado_data: dict)
+   - Registra fichado en 'fichados_apodaca'
+   - Agrega automáticamente fecha_registro_ficha
+   - Guarda todos los datos del alumno
+
+8. obtener_fichados_apodaca_agrupados()
+   - Agrupa fichados por nombre y matrícula
+   - Si hay duplicados, muestra uno con campo 'cantidad_fichas'
+   - Lógica de agrupación en memoria
+
+DETALLES TÉCNICOS:
+- Librería: pytz para zonas horarias
+- Zona horaria: America/Mexico_City (UTC-6)
+- Formato fecha: DD/MM/YYYY (formato mexicano)
+- Formato hora: HH:MM (24 horas)
+- Validación: Un registro por matrícula por día
+- Timestamp: Se guarda para ordenamiento y consultas
+
+PUNTOS IMPORTANTES:
+✓ Manejo correcto de zona horaria de México
+✓ Prevención de registros duplicados por día
+✓ Formato de fecha legible (DD/MM/YYYY)
+✓ Agrupación inteligente de fichados duplicados
+✓ Conversión automática de ObjectId a string para JSON
+
+================================================================================
+5. ARCHIVOS DE RUTAS/ENDPOINTS
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📄 app/routes/endpoints.py
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DESCRIPCIÓN:
+Define todos los endpoints HTTP de la API REST. Organizados por funcionalidad
+con tags para documentación automática en Swagger/OpenAPI.
+
+ENDPOINTS POR CATEGORÍA:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TAG: "usuarios"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GET /api/usuarios/maestros/todos
+- Obtiene todos los maestros
+- Retorna: {total: int, maestros: List}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TAG: "alumnos"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GET /api/alumnos/bachillerato
+- Lista todos los alumnos de bachillerato
+- Retorna: {total: int, alumnos: List[usuario_datos]}
+
+GET /api/alumnos/universidad
+- Lista todos los alumnos de universidad
+- Retorna: {total: int, alumnos: List[usuario_datos]}
+
+GET /api/alumnos/bachillerato/{matricula}
+- Obtiene alumno de bachillerato por matrícula
+- Retorna: usuario_datos
+- Error 404 si no existe
+
+GET /api/alumnos/universidad/{matricula}
+- Obtiene alumno de universidad por matrícula
+- Retorna: usuario_datos
+- Error 404 si no existe
+
+POST /api/alumnos/bachillerato/crear
+- Crea nuevo alumno en bachillerato
+- Body: usuario_datos
+- Retorna: {mensaje: str, alumno: dict}
+- Error 400 si matrícula ya existe
+
+POST /api/alumnos/universidad/crear
+- Crea nuevo alumno en universidad
+- Body: usuario_datos
+- Retorna: {mensaje: str, alumno: dict}
+- Error 400 si matrícula ya existe
+
+DELETE /api/alumnos/bachillerato/{matricula}
+- Elimina alumno de bachillerato
+- Retorna: {mensaje: str, alumno_eliminado: dict}
+- Error 404 si no existe
+
+DELETE /api/alumnos/universidad/{matricula}
+- Elimina alumno de universidad
+- Retorna: {mensaje: str, alumno_eliminado: dict}
+- Error 404 si no existe
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TAG: "asistencias"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+POST /api/asistencias/registrar
+- Registra asistencia de entrada
+- Body: {matricula: str, nombre: str}
+- Valida: Solo un registro por día
+- Retorna: {id: str, mensaje: str, registro: dict}
+- Error 400 si ya existe registro del día
+
+GET /api/asistencias/matricula/{matricula}
+- Obtiene asistencias por matrícula
+- Retorna: {matricula: str, total: int, asistencias: List}
+
+GET /api/asistencias/todas
+- Obtiene todas las asistencias
+- Colección: asistencia_general
+- Retorna: {coleccion: str, total: int, asistencias: List}
+
+GET /api/asistencias/apodaca/todas
+- Obtiene todas las asistencias de Apodaca
+- Colección: asistencia_general_apodaca
+- Retorna: {coleccion: str, total: int, asistencias: List}
+
+GET /api/asistencias/apodaca/{matricula}
+- Obtiene asistencias de Apodaca por matrícula
+- Retorna: {matricula: str, coleccion: str, total: int, asistencias: List}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TAG: "login"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+POST /api/usuarios/login
+- Autenticación antigua (colección 'login')
+- Body: LoginRequest {username, password}
+- Retorna: {mensaje: str, usuario: dict}
+- Error 401 si credenciales incorrectas
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TAG: "usuarios_apodaca"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+POST /api/usuarios/apodaca/crear
+- Crea nuevo usuario
+- Body: UsuarioCreate
+- Hashea contraseña automáticamente
+- Establece autorizado: false por defecto
+- Retorna: {mensaje: str, usuario: dict}
+- Error 400 si correo ya existe
+
+POST /api/usuarios/apodaca/login
+- Autenticación de usuarios Apodaca
+- Body: UsuarioLogin {correo, contraseña}
+- Verifica contraseña hasheada
+- Retorna: {mensaje: str, usuario: UsuarioResponseApodaca}
+- Error 401 si credenciales incorrectas
+
+POST /api/usuarios/apodaca/cambiar-contraseña
+- Cambia contraseña de usuario
+- Body: UsuarioCambiarContraseña
+- Valida contraseña actual
+- Retorna: {mensaje: str, correo: str}
+- Error 400 si contraseña actual incorrecta
+
+PUT /api/usuarios/apodaca/cambiar-autorizado
+- Cambia estado de autorización
+- Body: UsuarioCambiarAutorizado {correo, autorizado}
+- Retorna: {mensaje: str, usuario: dict}
+- Error 400 si usuario no existe
+
+GET /api/usuarios/apodaca
+- Lista todos los usuarios
+- Retorna: {total: int, usuarios: List}
+- No incluye contraseñas
+
+GET /api/usuarios/apodaca/{correo}
+- Obtiene usuario por correo
+- Retorna: dict con datos del usuario
+- Error 404 si no existe
+
+DELETE /api/usuarios/apodaca/{correo}
+- Elimina usuario por correo
+- Retorna: {mensaje: str, usuario_eliminado: dict}
+- Error 404 si no existe
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TAG: "fichados_apodaca"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+POST /api/fichados/apodaca/registrar
+- Registra fichado de alumno
+- Body: FichadoCreate
+- Agrega fecha_registro_ficha automáticamente
+- Retorna: {mensaje: str, fichado: dict}
+
+GET /api/fichados/apodaca
+- Obtiene fichados agrupados
+- Agrupa por nombre y matrícula
+- Muestra cantidad_fichas si hay duplicados
+- Retorna: {total: int, fichados: List}
+
+DETALLES TÉCNICOS:
+- Framework: FastAPI con APIRouter
+- Validación: Automática mediante Pydantic
+- Manejo de errores: HTTPException con códigos apropiados
+- Documentación: Automática en /docs (Swagger UI)
+- Tags: Organización de endpoints para documentación
+
+PUNTOS IMPORTANTES:
+✓ Separación clara de responsabilidades por tags
+✓ Validación automática de datos de entrada
+✓ Manejo consistente de errores HTTP
+✓ Documentación automática en Swagger
+✓ Endpoints RESTful siguiendo convenciones
+✓ Control de autorización mediante campo 'autorizado'
+
+================================================================================
+6. SCRIPTS Y UTILIDADES
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📄 scripts/init_database.py
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DESCRIPCIÓN:
+Script de utilidad para inicializar la base de datos con datos de ejemplo.
+Útil para desarrollo y testing.
+
+FUNCIONALIDAD:
+- Inserta alumnos de ejemplo en colección 'alumnos'
+- Inserta maestros de ejemplo en colección 'maestros'
+- Valida que no existan antes de insertar
+- Muestra mensajes de confirmación
+
+USO:
+python scripts/init_database.py
+
+DATOS DE EJEMPLO:
+- 3 alumnos con matrículas A001, A002, A003
+- 2 maestros con matrículas M001, M002
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📄 start.bat (Windows)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DESCRIPCIÓN:
+Script de inicio para Windows. Ejecuta el servidor con uvicorn en modo reload.
+
+COMANDO:
+python -m uvicorn app.main:app --reload
+
+CARACTERÍSTICAS:
+- Modo reload: Recarga automática al detectar cambios
+- Pausa al final para ver mensajes
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📄 start.sh (Linux/Mac)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DESCRIPCIÓN:
+Script de inicio para Linux/Mac. Similar a start.bat pero para sistemas Unix.
+
+USO:
+chmod +x start.sh
+./start.sh
+
+================================================================================
+7. DEPENDENCIAS Y LIBRERÍAS
+================================================================================
+
+📦 requirements.txt contiene:
+
+1. fastapi>=0.104.1
+   - Framework web moderno y rápido
+   - Documentación automática
+   - Validación automática con Pydantic
+   - Soporte async/await
+
+2. uvicorn[standard]>=0.24.0
+   - Servidor ASGI de alto rendimiento
+   - Soporte para WebSockets
+   - Modo reload para desarrollo
+
+3. pymongo>=4.6.0
+   - Driver oficial de MongoDB para Python
+   - Operaciones CRUD
+   - Manejo de conexiones
+
+4. python-dotenv>=1.0.0
+   - Carga variables de entorno desde .env
+   - Seguridad: No commitear credenciales
+
+5. pandas>=2.3.0
+   - Manipulación de datos
+   - Análisis de datos
+   - (Posible uso futuro para reportes)
+
+6. openpyxl>=3.1.2
+   - Lectura/escritura de archivos Excel
+   - (Posible uso futuro para reportes)
+
+7. python-multipart>=0.0.6
+   - Soporte para formularios multipart
+   - Upload de archivos
+
+8. pydantic>=2.5.0
+   - Validación de datos
+   - Serialización automática
+   - Integrado con FastAPI
+
+9. python-dateutil>=2.9.0
+   - Parsing de fechas
+   - Operaciones con fechas
+
+10. pytz>=2025.1
+    - Zonas horarias
+    - Usado para horario de México
+
+11. tzdata>=2025.1
+    - Datos de zonas horarias
+    - Complemento de pytz
+
+12. bcrypt>=4.0.1
+    - Hashing de contraseñas
+    - Seguridad: Salt automático
+    - Resistente a ataques de fuerza bruta
+
+================================================================================
+8. DETALLES TÉCNICOS IMPORTANTES
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ARQUITECTURA Y PATRONES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Arquitectura en Capas (Layered Architecture)
+   - Routes: Manejo de HTTP
+   - Services: Lógica de negocio
+   - Models: Validación y serialización
+   - Database: Acceso a datos
+
+2. Patrón Singleton
+   - Database: Una sola conexión reutilizada
+   - Config: Configuración centralizada
+
+3. Separación de Responsabilidades
+   - Cada módulo tiene una responsabilidad única
+   - Fácil mantenimiento y testing
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BASES DE DATOS Y COLECCIONES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Base de Datos: asistencia_edec
+├── alumnos (colección antigua)
+├── maestros (colección antigua)
+├── login (colección antigua)
+├── asistencia_general (colección antigua)
+├── asistencia_general_apodaca
+├── alumnos_bachillerato_apodaca
+├── alumnos_universidad_apodaca
+└── fichados_apodaca
+
+Base de Datos: usuarios_edec
+└── usuarios_apodaca
+
+CONVENCIONES DE NOMENCLATURA:
+- Colecciones Apodaca: Campos en mayúscula inicial (Matricula, Nombre, etc.)
+- Colecciones antiguas: Campos en minúscula (matricula, nombre, etc.)
+- Modelos Pydantic: Campos en minúscula (matricula, nombre, etc.)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SEGURIDAD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Contraseñas
+   - Hash con bcrypt (salt automático)
+   - Nunca se retornan en respuestas
+   - Validación antes de cambiar
+
+2. CORS
+   - Configurado para orígenes específicos
+   - Desarrollo y producción separados
+
+3. Validación
+   - Pydantic valida todos los datos de entrada
+   - Previene inyección de datos maliciosos
+
+4. Autorización
+   - Campo 'autorizado' controla acceso
+   - Nuevos usuarios: autorizado = false
+   - Administradores pueden cambiar estado
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MANEJO DE FECHAS Y HORAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Zona Horaria
+   - America/Mexico_City (UTC-6)
+   - Usa pytz para conversión correcta
+
+2. Formatos
+   - Fecha: DD/MM/YYYY (formato mexicano)
+   - Hora: HH:MM (24 horas)
+   - Timestamp: datetime con timezone para ordenamiento
+
+3. Validaciones
+   - Un registro por matrícula por día
+   - Previene duplicados
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MANEJO DE ERRORES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Códigos HTTP utilizados:
+- 200: Éxito
+- 400: Bad Request (datos inválidos, validaciones)
+- 401: Unauthorized (credenciales incorrectas)
+- 404: Not Found (recurso no existe)
+- 500: Internal Server Error (errores del servidor)
+
+Manejo consistente:
+- Try/except en todos los endpoints
+- HTTPException con mensajes descriptivos
+- Logging de errores en consola
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+COMPATIBILIDAD Y FLEXIBILIDAD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Matrículas
+   - Acepta string e int
+   - Búsqueda flexible en MongoDB
+   - Conversión automática
+
+2. Usuarios Antiguos
+   - Campo 'autorizado' con valor por defecto
+   - Compatibilidad hacia atrás
+   - No rompe funcionalidad existente
+
+3. Desarrollo/Producción
+   - Variables de entorno para configuración
+   - Valores por defecto para desarrollo local
+   - Compatible con Render.com y otros servicios
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OPTIMIZACIONES Y MEJORES PRÁCTICAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Conexión a BD
+   - Singleton: Una sola conexión
+   - Reutilización eficiente
+   - Cierre limpio al terminar
+
+2. Consultas
+   - Ordenamiento por timestamp/index
+   - Búsquedas indexadas por matrícula/correo
+   - Limitación de resultados cuando aplica
+
+3. Serialización
+   - ObjectId convertido a string
+   - Datetime a ISO format
+   - Respuestas JSON optimizadas
+
+4. Validaciones
+   - Validación temprana (Pydantic)
+   - Previene consultas innecesarias a BD
+   - Mensajes de error claros
+
+================================================================================
+9. FLUJO DE DATOS TÍPICO
+================================================================================
+
+EJEMPLO: Crear un nuevo usuario
+
+1. Cliente → POST /api/usuarios/apodaca/crear
+   Body: {nombre_completo, correo, contraseña, rol, campus}
+
+2. FastAPI → Valida con UsuarioCreate (Pydantic)
+   - Verifica tipos
+   - Valida formato de correo
+
+3. Endpoint → Llama a crear_usuario_apodaca()
+
+4. Service → Valida correo único en BD
+   - Hashea contraseña con bcrypt
+   - Establece autorizado: false
+   - Inserta en MongoDB
+
+5. Service → Retorna usuario (sin contraseña)
+
+6. Endpoint → Retorna respuesta JSON
+   {mensaje: "...", usuario: {...}}
+
+7. Cliente ← Recibe respuesta
+
+================================================================================
+10. NOTAS FINALES
+================================================================================
+
+CARACTERÍSTICAS DESTACADAS:
+✓ Arquitectura limpia y mantenible
+✓ Separación clara de responsabilidades
+✓ Validación automática de datos
+✓ Seguridad: Contraseñas hasheadas
+✓ Documentación automática (Swagger)
+✓ Manejo correcto de zonas horarias
+✓ Compatibilidad desarrollo/producción
+✓ Control de acceso mediante 'autorizado'
+
+ÁREAS DE MEJORA FUTURA:
+- Autenticación JWT para sesiones
+- Rate limiting para prevenir abusos
+- Caché para consultas frecuentes
+- Logging estructurado
+- Tests unitarios e integración
+- Migración de colecciones antiguas
+
+================================================================================
+                    FIN DEL MANUAL
+================================================================================
+
+Fecha de creación: 2026
+Versión del sistema: 1.0.0
+Framework: FastAPI
+Base de datos: MongoDB
