@@ -10,7 +10,7 @@ Este módulo contiene las funciones que interactúan con MongoDB para:
 - Crear y autenticar usuarios en la base de datos usuarios_edec
 """
 from app.database import get_db, get_db_usuarios
-from app.models.usuario import UsuarioResponse, usuario_datos, UsuarioCreate, UsuarioResponseApodaca, UsuarioCambiarContraseña
+from app.models.usuario import UsuarioResponse, usuario_datos, UsuarioCreate, UsuarioResponseApodaca, UsuarioCambiarContraseña, UsuarioCambiarAutorizado
 from typing import List, Dict, Optional
 from datetime import datetime
 import bcrypt
@@ -412,6 +412,38 @@ def eliminar_usuario_por_correo_apodaca(correo: str) -> Dict:
     return {
         "mensaje": "Usuario eliminado exitosamente",
         "usuario_eliminado": usuario
+    }
+
+def cambiar_autorizado_usuario_apodaca(datos: UsuarioCambiarAutorizado) -> Dict:
+    """
+    Cambia el estado de autorización de un usuario en la base de datos usuarios_edec.
+    """
+    db = get_db_usuarios()
+    coleccion = db.usuarios_apodaca
+    
+    # Buscar el usuario por correo
+    usuario = coleccion.find_one({"correo": datos.correo})
+    
+    if not usuario:
+        raise ValueError("Usuario no encontrado")
+    
+    # Actualizar el campo autorizado en la base de datos
+    resultado = coleccion.update_one(
+        {"correo": datos.correo},
+        {"$set": {"autorizado": datos.autorizado}}
+    )
+    
+    if resultado.modified_count == 0:
+        raise ValueError("No se pudo actualizar el estado de autorización")
+    
+    # Obtener el usuario actualizado
+    usuario_actualizado = coleccion.find_one({"correo": datos.correo})
+    usuario_actualizado["_id"] = str(usuario_actualizado["_id"])
+    usuario_actualizado.pop("contraseña", None)
+    
+    return {
+        "mensaje": f"Estado de autorización actualizado exitosamente a {datos.autorizado}",
+        "usuario": usuario_actualizado
     }
 
 # ============================================================================

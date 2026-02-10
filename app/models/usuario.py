@@ -68,6 +68,10 @@ class UsuarioCambiarContraseña(BaseModel):
     contraseña_actual: str
     nueva_contraseña: str
 
+class UsuarioCambiarAutorizado(BaseModel):
+    correo: str
+    autorizado: bool
+
 # Modelos para fichados de Apodaca
 class FichadoCreate(BaseModel):
     matricula: str

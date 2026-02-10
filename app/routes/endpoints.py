@@ -25,6 +25,7 @@ from app.services.usuario_service import (
     obtener_todos_usuarios_apodaca,
     obtener_usuario_por_correo_apodaca,
     eliminar_usuario_por_correo_apodaca,
+    cambiar_autorizado_usuario_apodaca,
     crear_alumno_bachillerato,
     crear_alumno_universidad,
     eliminar_alumno_bachillerato,
@@ -39,7 +40,7 @@ from app.services.asistencia_service import (
     registrar_fichado_apodaca,
     obtener_fichados_apodaca_agrupados
 )
-from app.models.usuario import UsuarioResponse, LoginRequest, usuario_datos, UsuarioCreate, UsuarioLogin, UsuarioResponseApodaca, UsuarioCambiarContraseña, FichadoCreate
+from app.models.usuario import UsuarioResponse, LoginRequest, usuario_datos, UsuarioCreate, UsuarioLogin, UsuarioResponseApodaca, UsuarioCambiarContraseña, UsuarioCambiarAutorizado, FichadoCreate
 from app.models.asistencia import AsistenciaCreate
 
 # Router principal
@@ -364,6 +365,21 @@ async def eliminar_usuario(correo: str):
     except Exception as e:
         print(f"Error al eliminar usuario: {e}")
         raise HTTPException(status_code=500, detail=f"Error al eliminar usuario: {str(e)}")
+
+@router.put("/api/usuarios/apodaca/cambiar-autorizado", tags=["usuarios_apodaca"])
+async def cambiar_autorizado(datos: UsuarioCambiarAutorizado):
+    """
+    Cambia el estado de autorización de un usuario en la base de datos usuarios_edec.
+    Permite a los administradores autorizar o desautorizar usuarios.
+    """
+    try:
+        resultado = cambiar_autorizado_usuario_apodaca(datos)
+        return resultado
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"Error al cambiar estado de autorización: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al cambiar estado de autorización: {str(e)}")
 
 # ============================================================================
 # ENDPOINTS PARA FICHADOS DE APODACA (Base de datos asistencia_edec)
