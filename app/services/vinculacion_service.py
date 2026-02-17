@@ -8,7 +8,7 @@ Este módulo contiene las funciones que interactúan con MongoDB para:
 - Manejo de zona horaria de México para fechas y horas
 """
 from datetime import datetime
-from app.database import get_db
+from app.database import get_db_vinculacion
 from typing import List, Dict, Optional
 import pytz
 
@@ -24,9 +24,9 @@ def registrar_vinculacion(nombre: str, telefono: int) -> dict:
     """
     Registra un nuevo usuario en la colección 'vinculacion_registros'.
     - Guarda: nombre, telefono, fecha (formato: "dd/mm/aaaa a las HH:MM")
-    - Almacena en la colección 'vinculacion_registros'
+    - Almacena en la base de datos 'vinculacion_apodaca_edec', colección 'vinculacion_registros'
     """
-    db = get_db()
+    db = get_db_vinculacion()
     coleccion = db.vinculacion_registros
     
     # Obtener fecha y hora en horario de México
@@ -54,8 +54,9 @@ def registrar_vinculacion(nombre: str, telefono: int) -> dict:
 def obtener_todos_registros_vinculacion() -> List[Dict]:
     """
     Obtiene todos los registros de la colección 'vinculacion_registros'
+    de la base de datos 'vinculacion_apodaca_edec'
     """
-    db = get_db()
+    db = get_db_vinculacion()
     coleccion = db.vinculacion_registros
     registros = list(coleccion.find().sort("timestamp", -1))  # Más recientes primero
     
@@ -71,8 +72,9 @@ def eliminar_registro_vinculacion_por_telefono(telefono: int) -> dict:
     """
     Elimina un registro de vinculación por su número de teléfono.
     Retorna información sobre el registro eliminado.
+    Busca en la base de datos 'vinculacion_apodaca_edec', colección 'vinculacion_registros'
     """
-    db = get_db()
+    db = get_db_vinculacion()
     coleccion = db.vinculacion_registros
     
     # Buscar el registro por teléfono

@@ -35,3 +35,9 @@ def get_db_usuarios():
     if database.client is None:
         connect_db()
     return database.client["usuarios_edec"]
+
+def get_db_vinculacion():
+    """Retorna la instancia de la base de datos de vinculación"""
+    if database.client is None:
+        connect_db()
+    return database.client["vinculacion_apodaca_edec"]
