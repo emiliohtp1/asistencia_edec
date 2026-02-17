@@ -40,8 +40,14 @@ from app.services.asistencia_service import (
     registrar_fichado_apodaca,
     obtener_fichados_apodaca_agrupados
 )
+from app.services.vinculacion_service import (
+    registrar_vinculacion,
+    obtener_todos_registros_vinculacion,
+    eliminar_registro_vinculacion_por_telefono
+)
 from app.models.usuario import UsuarioResponse, LoginRequest, usuario_datos, UsuarioCreate, UsuarioLogin, UsuarioResponseApodaca, UsuarioCambiarContraseña, UsuarioCambiarAutorizado, FichadoCreate
 from app.models.asistencia import AsistenciaCreate
+from app.models.vinculacion import VinculacionCreate
 
 # Router principal
 router = APIRouter()
@@ -488,3 +494,59 @@ async def eliminar_alumno_universidad_endpoint(matricula: str):
     except Exception as e:
         print(f"Error al eliminar alumno de universidad: {e}")
         raise HTTPException(status_code=500, detail=f"Error al eliminar alumno: {str(e)}")
+
+# ============================================================================
+# ENDPOINTS PARA VINCULACIÓN
+# ============================================================================
+
+@router.post("/api/vinculacion/registrar", tags=["vinculacion"])
+async def registrar_vinculacion_endpoint(vinculacion: VinculacionCreate):
+    """
+    Registra un nuevo usuario en la colección 'vinculacion_registros'.
+    Permite al departamento de Vinculación registrar usuarios nuevos para la universidad.
+    El departamento podrá ingresar el nombre completo y el número de teléfono del usuario nuevo,
+    y se mostrará la fecha en la que se ingresó ese dato.
+    El formato de la fecha será: "dd/mm/aaaa a las HH:MM (formato 24 horas)".
+    """
+    try:
+        resultado = registrar_vinculacion(
+            nombre=vinculacion.nombre,
+            telefono=vinculacion.telefono
+        )
+        return resultado
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"Error al registrar vinculación: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al registrar vinculación: {str(e)}")
+
+@router.get("/api/vinculacion/datos", tags=["vinculacion"])
+async def obtener_datos_vinculacion_endpoint():
+    """
+    Obtiene todos los registros disponibles de la colección 'vinculacion_registros'.
+    Permite consultar desde el frontend para mostrar los registros existentes.
+    """
+    try:
+        registros = obtener_todos_registros_vinculacion()
+        return {
+            "total": len(registros),
+            "registros": registros
+        }
+    except Exception as e:
+        print(f"Error al obtener registros de vinculación: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener registros: {str(e)}")
+
+@router.delete("/api/vinculacion/borrar/{telefono}", tags=["vinculacion"])
+async def eliminar_registro_vinculacion_endpoint(telefono: int):
+    """
+    Elimina un registro de la colección 'vinculacion_registros' por su número de teléfono.
+    Permite eliminar un objeto de la base de datos usando el teléfono como identificador.
+    """
+    try:
+        resultado = eliminar_registro_vinculacion_por_telefono(telefono)
+        return resultado
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        print(f"Error al eliminar registro de vinculación: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al eliminar registro: {str(e)}")
