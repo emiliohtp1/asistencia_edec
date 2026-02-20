@@ -14,10 +14,19 @@ import pytz
 
 def obtener_hora_mexico():
     """
-    Obtiene la fecha y hora actual en horario de México (UTC-6)
+    Obtiene la fecha y hora actual en horario de México (Monterrey/México).
+    Usa la zona horaria America/Mexico_City que es la correcta para Monterrey, México.
+    Retorna un datetime con timezone info para que MongoDB lo maneje correctamente.
+    
+    Nota: MongoDB almacena fechas en UTC, pero esta función retorna la hora local
+    de México con información de timezone, por lo que MongoDB la convertirá correctamente.
     """
     zona_mexico = pytz.timezone('America/Mexico_City')
-    ahora_mexico = datetime.now(zona_mexico)
+    # Obtener la hora actual en UTC primero y luego convertir a zona horaria de México
+    # Esto asegura que la fecha y hora sean correctas independientemente de la zona
+    # horaria del servidor donde se ejecute la aplicación
+    ahora_utc = datetime.now(pytz.UTC)
+    ahora_mexico = ahora_utc.astimezone(zona_mexico)
     return ahora_mexico
 
 def registrar_asistencia(matricula: str, nombre: str) -> dict:
