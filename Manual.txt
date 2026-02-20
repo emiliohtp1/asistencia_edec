@@ -386,6 +386,8 @@ FUNCIONES PRINCIPALES:
 1. obtener_hora_mexico()
    - Retorna datetime actual en zona horaria de México (America/Mexico_City)
    - Usa pytz para manejo de zonas horarias
+   - Obtiene hora en UTC primero y luego convierte a zona horaria de México
+   - Asegura fecha y hora correctas independientemente de la zona horaria del servidor
    - Formato: datetime con timezone
 
 2. registrar_asistencia(matricula: str, nombre: str)
@@ -422,6 +424,14 @@ FUNCIONES PRINCIPALES:
    - Si hay duplicados, muestra uno con campo 'cantidad_fichas'
    - Lógica de agrupación en memoria
 
+9. eliminar_fichado_mas_antiguo_por_matricula(matricula: str)
+   - Elimina el registro más antiguo de un fichado por matrícula
+   - Busca todos los registros con la misma matrícula
+   - Ordena por fecha_registro_ficha (ascendente) para encontrar el más antiguo
+   - Elimina el registro más antiguo encontrado
+   - Retorna información del registro eliminado y total de registros restantes
+   - Lanza ValueError si no se encuentra ningún registro con esa matrícula
+
 DETALLES TÉCNICOS:
 - Librería: pytz para zonas horarias
 - Zona horaria: America/Mexico_City (UTC-6)
@@ -431,10 +441,12 @@ DETALLES TÉCNICOS:
 - Timestamp: Se guarda para ordenamiento y consultas
 
 PUNTOS IMPORTANTES:
-✓ Manejo correcto de zona horaria de México
+✓ Manejo correcto de zona horaria de México (Monterrey)
+✓ Conversión UTC a zona horaria local para precisión
 ✓ Prevención de registros duplicados por día
 ✓ Formato de fecha legible (DD/MM/YYYY)
 ✓ Agrupación inteligente de fichados duplicados
+✓ Eliminación selectiva del registro más antiguo por matrícula
 ✓ Conversión automática de ObjectId a string para JSON
 
 ================================================================================
@@ -604,6 +616,13 @@ GET /api/fichados/apodaca
 - Agrupa por nombre y matrícula
 - Muestra cantidad_fichas si hay duplicados
 - Retorna: {total: int, fichados: List}
+
+DELETE /api/fichados/apodaca/{matricula}
+- Elimina el registro más antiguo de un fichado por matrícula
+- Busca todos los registros con la misma matrícula
+- Ordena por fecha_registro_ficha y elimina el más antiguo
+- Retorna: {mensaje: str, fichado_eliminado: dict, total_registros_restantes: int}
+- Error 404 si no se encuentra ningún registro con esa matrícula
 
 DETALLES TÉCNICOS:
 - Framework: FastAPI con APIRouter
@@ -802,8 +821,10 @@ MANEJO DE FECHAS Y HORAS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 1. Zona Horaria
-   - America/Mexico_City (UTC-6)
+   - America/Mexico_City (UTC-6) - Zona horaria de Monterrey, México
    - Usa pytz para conversión correcta
+   - Obtiene hora en UTC primero y luego convierte a zona horaria local
+   - Asegura precisión independientemente de la zona horaria del servidor
 
 2. Formatos
    - Fecha: DD/MM/YYYY (formato mexicano)
@@ -910,7 +931,8 @@ CARACTERÍSTICAS DESTACADAS:
 ✓ Validación automática de datos
 ✓ Seguridad: Contraseñas hasheadas
 ✓ Documentación automática (Swagger)
-✓ Manejo correcto de zonas horarias
+✓ Manejo correcto de zonas horarias (Monterrey, México)
+✓ Eliminación selectiva de fichados duplicados
 ✓ Compatibilidad desarrollo/producción
 ✓ Control de acceso mediante 'autorizado'
 
@@ -927,6 +949,11 @@ CARACTERÍSTICAS DESTACADAS:
 ================================================================================
 
 Fecha de creación: 2026
+Última actualización: Febrero 2026
 Versión del sistema: 1.0.0
 Framework: FastAPI
 Base de datos: MongoDB
+
+CAMBIOS RECIENTES:
+- Agregado endpoint DELETE /api/fichados/apodaca/{matricula} para eliminar el registro más antiguo por matrícula
+- Mejorado manejo de zona horaria en obtener_hora_mexico() para precisión en fecha/hora de Monterrey, México
