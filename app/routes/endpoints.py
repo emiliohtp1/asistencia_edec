@@ -38,7 +38,8 @@ from app.services.asistencia_service import (
     obtener_todas_asistencias_apodaca,
     obtener_asistencias_apodaca_por_matricula,
     registrar_fichado_apodaca,
-    obtener_fichados_apodaca_agrupados
+    obtener_fichados_apodaca_agrupados,
+    eliminar_fichado_mas_antiguo_por_matricula
 )
 from app.services.vinculacion_service import (
     registrar_vinculacion,
@@ -424,6 +425,22 @@ async def obtener_fichados_agrupados():
     except Exception as e:
         print(f"Error al obtener fichados: {e}")
         raise HTTPException(status_code=500, detail=f"Error al obtener fichados: {str(e)}")
+
+@router.delete("/api/fichados/apodaca/{matricula}", tags=["fichados_apodaca"])
+async def eliminar_fichado_mas_antiguo(matricula: str):
+    """
+    Elimina el registro más antiguo de un fichado por matrícula.
+    Busca todos los registros con la misma matrícula, los ordena por fecha_registro_ficha
+    y elimina el más antiguo.
+    """
+    try:
+        resultado = eliminar_fichado_mas_antiguo_por_matricula(matricula)
+        return resultado
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        print(f"Error al eliminar fichado: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al eliminar fichado: {str(e)}")
 
 # ============================================================================
 # ENDPOINTS PARA GESTIÓN DE ALUMNOS (Bachillerato y Universidad)

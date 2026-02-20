@@ -220,3 +220,52 @@ def obtener_fichados_apodaca_agrupados() -> List[Dict]:
     resultado = list(fichados_agrupados.values())
     
     return resultado
+
+def eliminar_fichado_mas_antiguo_por_matricula(matricula: str) -> Dict:
+    """
+    Elimina el registro más antiguo de un fichado por matrícula.
+    Busca todos los registros con la misma matrícula, los ordena por fecha_registro_ficha
+    y elimina el más antiguo.
+    
+    Args:
+        matricula: La matrícula del fichado a eliminar
+        
+    Returns:
+        Dict con información del registro eliminado
+        
+    Raises:
+        ValueError: Si no se encuentra ningún registro con esa matrícula
+    """
+    db = get_db()
+    coleccion = db.fichados_apodaca
+    
+    # Buscar todos los registros con la misma matrícula y ordenarlos por fecha_registro_ficha
+    # Orden ascendente (1) = más antiguo primero
+    fichados = list(coleccion.find({"matricula": matricula}).sort("fecha_registro_ficha", 1))
+    
+    if not fichados:
+        raise ValueError(f"No se encontraron registros de fichado para la matrícula {matricula}")
+    
+    # Obtener el registro más antiguo (el primero de la lista ordenada)
+    fichado_mas_antiguo = fichados[0].copy()  # Hacer copia para no modificar el original
+    fichado_id = fichado_mas_antiguo["_id"]
+    
+    # Eliminar el registro
+    resultado = coleccion.delete_one({"_id": fichado_id})
+    
+    if resultado.deleted_count == 0:
+        raise ValueError(f"No se pudo eliminar el registro de fichado para la matrícula {matricula}")
+    
+    # Convertir ObjectId a string y fecha a ISO format para la respuesta
+    fichado_mas_antiguo["_id"] = str(fichado_mas_antiguo["_id"])
+    
+    # Convertir fecha_registro_ficha a ISO format si es datetime
+    fecha_registro = fichado_mas_antiguo.get("fecha_registro_ficha")
+    if isinstance(fecha_registro, datetime):
+        fichado_mas_antiguo["fecha_registro_ficha"] = fecha_registro.isoformat()
+    
+    return {
+        "mensaje": "Fichado más antiguo eliminado exitosamente",
+        "fichado_eliminado": fichado_mas_antiguo,
+        "total_registros_restantes": len(fichados) - 1
+    }
