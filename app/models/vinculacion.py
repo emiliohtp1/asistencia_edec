@@ -11,10 +11,12 @@ from pydantic import BaseModel
 class VinculacionCreate(BaseModel):
     nombre: str
     telefono: int
+    programa: str
 
 class VinculacionResponse(BaseModel):
     id: str
     nombre: str
     telefono: int
+    programa: str
     fecha: str
     timestamp: str

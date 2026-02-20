@@ -20,10 +20,10 @@ def obtener_hora_mexico():
     ahora_mexico = datetime.now(zona_mexico)
     return ahora_mexico
 
-def registrar_vinculacion(nombre: str, telefono: int) -> dict:
+def registrar_vinculacion(nombre: str, telefono: int, programa: str) -> dict:
     """
     Registra un nuevo usuario en la colección 'vinculacion_registros'.
-    - Guarda: nombre, telefono, fecha (formato: "dd/mm/aaaa a las HH:MM")
+    - Guarda: nombre, telefono, programa, fecha (formato: "dd/mm/aaaa a las HH:MM")
     - Almacena en la base de datos 'vinculacion_apodaca_edec', colección 'vinculacion_registros'
     """
     db = get_db_vinculacion()
@@ -37,6 +37,7 @@ def registrar_vinculacion(nombre: str, telefono: int) -> dict:
     registro = {
         "nombre": nombre,
         "telefono": telefono,
+        "programa": programa,
         "fecha": fecha_formato,
         "timestamp": ahora_mexico
     }

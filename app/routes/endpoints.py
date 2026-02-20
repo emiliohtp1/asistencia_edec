@@ -521,14 +521,15 @@ async def registrar_vinculacion_endpoint(vinculacion: VinculacionCreate):
     """
     Registra un nuevo usuario en la colección 'vinculacion_registros'.
     Permite al departamento de Vinculación registrar usuarios nuevos para la universidad.
-    El departamento podrá ingresar el nombre completo y el número de teléfono del usuario nuevo,
+    El departamento podrá ingresar el nombre completo, número de teléfono y programa del usuario nuevo,
     y se mostrará la fecha en la que se ingresó ese dato.
     El formato de la fecha será: "dd/mm/aaaa a las HH:MM (formato 24 horas)".
     """
     try:
         resultado = registrar_vinculacion(
             nombre=vinculacion.nombre,
-            telefono=vinculacion.telefono
+            telefono=vinculacion.telefono,
+            programa=vinculacion.programa
         )
         return resultado
     except ValueError as e:
